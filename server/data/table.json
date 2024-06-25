@@ -1,0 +1,9 @@
+{
+    "filename": "ji21j3oijio12",
+    "rules": [
+        {"id": 1, "order": 1, "channel": "Dowolna Grupa", "keywords": "błąd,wycena", "delay": 60, "icon": "niebieski", "sound": "sound1"},
+        {"id": 2, "order": 2, "channel": "Dowolna Osoba", "keywords": "", "delay": 10, "icon": "czerwony", "sound": "sound2"},
+        {"id": 3, "order": 3, "channel": "Konkretny kanał", "keywords": "", "delay": 120, "icon": "purpurowy", "sound": "sound3"},
+        {"id": 4, "order": 4, "channel": "Konkretna osoba", "keywords": "", "delay": 10, "icon": "purpurowy", "sound": "sound4"}
+    ]
+}
