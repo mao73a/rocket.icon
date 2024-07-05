@@ -1,0 +1,1 @@
+pyinstaller --hide-console hide-early -F rocketicon.py

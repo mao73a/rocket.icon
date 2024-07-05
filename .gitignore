@@ -1,2 +1,8 @@
-documents/
-node_modules/
+*.pyc
+build
+dist
+__pycache__
+rules.json
+*.exe
+*.spec
+subscriptions.txt
