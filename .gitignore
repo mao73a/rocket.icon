@@ -2,7 +2,7 @@
 build
 dist
 __pycache__
-rules.json
+config.json
 *.exe
 *.spec
 subscriptions.txt

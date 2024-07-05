@@ -1,0 +1,51 @@
+{
+    "defaults":  
+    {   "delay": "10",
+        "icon": "bubble2y.png",
+        "sound": "rocketicon_v3.wav",
+        "escalation": 300
+    },
+    "rules": [
+        {
+            "name": "CAM_WEB_DEV_FRONT",
+            "ignore" : "True",
+            "delay": "10",
+            "icon": "bubble2p.png",
+            "sound": "rocketicon_v3.wav",
+            "active": "True"
+        },    
+        {
+            "name": "type:p",
+            "delay": "30",
+            "icon": "bubble2b.png",
+            "sound": "rocketicon_v1.wav",
+            "active": "True"
+        },
+        {
+           "name": "type:d",
+            "delay": "10",
+            "icon": "bubble2r.png",
+            "sound": "rocketicon_v2.wav",
+            "active": "True"
+        }
+        {
+           "name": "type:*",
+            "delay": "10",
+            "icon": "bubble2l.png",
+            "sound": "rocketicon_v2.wav",
+            "active": "True"
+        }        
+    ]
+}
+
+;Regu³y s¹ przetwarzane w kolejnoœci wyst¹pienia. Przetwarzanie zatrzymuje siê po dopasowaniu pierszej regu³y.
+;"name": nazwa lub rodzaj kana³u np:
+;  "name": "type:*" - wszystkie kana³y
+;  "name": "type:p" - wszystkie kana³y typu Public
+;  "name": "type:d" - wszystkie kana³y typu Direct (od zwyk³ych u¿ytkowników)
+;  "name": "XYZ"    - kana³ o nazwie równej dok³adnie XYZ: mo¿e to byæ nazwa u¿ytkownika lub nazwa kana³u
+;"ignore" : "True|False" - ignoruj ten kana³ - brak powiadomieñ
+;"delay": "10" - czas opóŸnienia informowania o nowych wiadomoœciach w sekundach: minium to 10 sek
+;"icon": "bubble2.png|bubble2b.png|bubble2g.png|bubble2l.png|bubble2o.png|bubble2p.png|bubble2r.png|bubble2y.png", - ikona powiadomienia (zobacz folder icons aby zobaczyæ dostêpne ikony)
+;"sound": "rocketicon_v1.wav|rocketicon_v2.wav|rocketicon_v3.wav", - dziwiêk powiadomnienia
+;"active": "True|False" - czy regu³a aktywna. Regu³a nieaktywna jest pomijana 
