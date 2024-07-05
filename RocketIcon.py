@@ -262,10 +262,17 @@ def handle_message(channel_id, sender_id, msg_id, thread_id, msg, qualifier,
             print(f"    Exception: {e}")
         print('   '+msg)
 
-def handle_message1(channel_id, sender_id, msg_id, thread_id, msg, qualifier,
-                   unread, repeated):
-    """Simply print the message that arrived."""
-    print(msg)
+def handle_message1(channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
+    print(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
+
+    if not g_unread_subscription_list.get(channel_id):
+        g_unread_subscription_list[channel_id] = []
+    if unread:
+        g_unread_subscription_list[channel_id].append(msg_id)
+        print("   -- handle_message1 dodano ");
+    elif msg_id in g_unread_subscription_list[channel_id]:
+        g_unread_subscription_list[channel_id].remove(msg_id)
+        print("   -- handle_message1 usunieto ");
 
 #asyncio.run(monitor_subscriptions_websocket()
 async def monitor_subscriptions_websocket():
@@ -294,20 +301,16 @@ async def monitor_subscriptions_websocket():
                 for sub in updates:
                     fname = sub.get('fname')
                     chtype = sub.get('t')
-                    channel_id = sub.get('_id')
+                    channel_id = sub.get('rid')
                     open = sub.get('open')
                     if open==True:
                         matching_rule = find_matching_rule(fname, chtype)
-                        print('#8'+matching_rule.get('ignore', "False"))
                         if matching_rule and matching_rule.get('ignore', "False") == "False":
-                            print('# 9 ')
-                            print(f'subscribe: {fname} {channel_id}')
-                            #g_subscription_dict[channel_id]=sub
+                            g_subscription_dict[channel_id]=sub
                             await rc.subscribe_to_channel_messages(channel_id,  handle_message1)
-                            print('# 10 ')
+                            print(f'subscribed to  {fname}  {channel_id}')
             # 2. ...and then simply wait for the registered events.
             await rc.run_forever()
-            #stop_event.wait(10)
         except (RocketChat.ConnectionClosed,
                 RocketChat.ConnectCallFailed) as e:
             set_icon_title(f"Connection failed: {e}")
