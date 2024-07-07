@@ -1,0 +1,5 @@
+pystray==0.19.5
+requests==2.32.3
+rocketchat-async==4.1.0
+websockets==10.4
+

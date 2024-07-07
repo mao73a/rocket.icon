@@ -150,6 +150,9 @@ async def monitor_subscriptions_websocket():
             print(f'Connection failed: {e}. Waiting a few seconds...')
             await asyncio.sleep(random.uniform(4, 8))
             print('Reconnecting...')
+        except asyncio.CancelledError as e:              
+                    print("Break it out")        
+                    break                  
 
 async def monitor_subscriptions_websocket2():
     while True:

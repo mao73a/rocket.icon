@@ -13,6 +13,7 @@ import shutil
 from rocketchat_async import RocketChat
 import asyncio
 import random
+import signal
 
 TITLE = "Better Rocket Icon"
 
@@ -24,10 +25,12 @@ local_user_dir = os.path.expanduser("~/.rocketIcon")
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
 def ensure_local_files():
-    if not os.path.exists(local_user_dir):
-        os.makedirs(local_user_dir)
-        shutil.copy('config.json', os.path.join(local_user_dir, 'config.json'))
-        shutil.copy('rules.json', os.path.join(local_user_dir, 'rules.json'))
+    if not os.path.exists(local_user_dir+'/config.json'):
+        try:
+            os.makedirs(local_user_dir)
+        finally:            
+            shutil.copy('config.json', os.path.join(local_user_dir, 'config.json'))
+            shutil.copy('rules.json', os.path.join(local_user_dir, 'rules.json'))
 
 ensure_local_files()
 
@@ -40,11 +43,14 @@ config_mtime = os.path.getmtime(config_path)
 rules_mtime = os.path.getmtime(rules_path)
 stop_event = threading.Event()
 pause_event = threading.Event()  # Event to control pausing
+asyncio_stop_event = None
+asyncio_loop = None
+asyncio_thread = None
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 last_fulfilled = {}
 escalation_times = {}
 g_subscription_dict = {}
-g_unread_subscription_list = []
+g_unread_subscription_list = {}
 g_unread_counts = {}
 subscription_lock = threading.Lock()
 
@@ -264,20 +270,27 @@ def handle_message(channel_id, sender_id, msg_id, thread_id, msg, qualifier,
 
 def handle_message1(channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
     print(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
-
+    #qualifier=videoconf
     if not g_unread_subscription_list.get(channel_id):
-        g_unread_subscription_list[channel_id] = []
+        if not unread:
+            return
+        else:
+            g_unread_subscription_list[channel_id] = []
     if unread:
         g_unread_subscription_list[channel_id].append(msg_id)
-        print("   -- handle_message1 dodano ");
+        print("   -- handle_message1 dodano ")
     elif msg_id in g_unread_subscription_list[channel_id]:
         g_unread_subscription_list[channel_id].remove(msg_id)
-        print("   -- handle_message1 usunieto ");
+        print("   -- handle_message1 usunieto ")
+        if len(g_unread_subscription_list[channel_id])==0:
+            del g_unread_subscription_list[channel_id]
 
 #asyncio.run(monitor_subscriptions_websocket()
 async def monitor_subscriptions_websocket():
+    global asyncio_stop_event
     set_basic_image()
-    while True:
+    asyncio_stop_event = asyncio.Event()
+    while not asyncio_stop_event.is_set():
         if len(RULES) == 0:
             set_error_image()
             await asyncio.sleep(10)
@@ -311,13 +324,18 @@ async def monitor_subscriptions_websocket():
                             print(f'subscribed to  {fname}  {channel_id}')
             # 2. ...and then simply wait for the registered events.
             await rc.run_forever()
-        except (RocketChat.ConnectionClosed,
-                RocketChat.ConnectCallFailed) as e:
-            set_icon_title(f"Connection failed: {e}")
-            set_error_image()
-            print(f'Connection failed: {e}. Waiting a few seconds...')
-            await asyncio.sleep(random.uniform(4, 8))
-            print('Reconnecting...')
+        except  (RocketChat.ConnectionClosed, RocketChat.ConnectCallFailed) as e:
+                set_icon_title(f"Connection failed: {e}")
+                set_error_image()
+                print(f'Connection failed: {e}. Waiting a few seconds...')
+                await asyncio.sleep(random.uniform(4, 8))
+                print('Reconnecting...')
+        except asyncio.CancelledError as e:              
+                    print("Break it out")        
+                    break               
+        await asyncio.sleep(1)
+        print("Stopped monitor_subscriptions_websocket")
+
 
 
 
@@ -342,9 +360,11 @@ def monitor_file_changes():
 def on_clicked_quit(icon, item):
     print(f"Menu click ")
     if item.text == "Quit":
+        stop_loop()
         stop_event.set()
         pause_event.set()  # Resume if paused to ensure clean exit
         icon.stop()
+
         print("Normal exit.")
 
 def on_clicked_show(icon, item):
@@ -361,7 +381,7 @@ def on_clicked_settings(icon, item):
 def on_clicked_rules(icon, item):
     os.startfile(rules_path)
 
-def stop_for_duration(duration):
+def pause_for_duration(duration):
     global pause_invoked
     def stop():
         global pause_invoked
@@ -381,13 +401,13 @@ def stop_for_duration(duration):
     threading.Thread(target=stop).start()
 
 def on_clicked_stop_10(icon, item):
-    stop_for_duration(600)  # 600 seconds = 10 minutes
+    pause_for_duration(600)  # 600 seconds = 10 minutes
 
 def on_clicked_stop_30(icon, item):
-    stop_for_duration(1800)  # 1800 seconds = 30 minutes
+    pause_for_duration(1800)  # 1800 seconds = 30 minutes
 
 def on_clicked_stop_60(icon, item):
-    stop_for_duration(3600)  # 3600 seconds = 60 minutes
+    pause_for_duration(3600)  # 3600 seconds = 60 minutes
 
 def on_clicked_resume(icon, item):
     pause_event.set()  # Set the pause event to resume monitoring
@@ -404,6 +424,7 @@ def on_clicked_subscriptions(icon, item):
     with open(file_path, 'w') as file:
         file.write(json_data)
     os.startfile(file_path)
+
 
 def setup(icon):
     icon.visible = True
@@ -422,11 +443,26 @@ def setup(icon):
     )
 
 def monitor_asyncio_subscriptions_websocket():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    global asyncio_loop
+    asyncio_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(asyncio_loop)
     print("#2")
-    loop.run_until_complete(monitor_subscriptions_websocket())
-    loop.close()
+    try:
+        asyncio_loop.run_until_complete(monitor_subscriptions_websocket())
+    finally:
+        asyncio_loop.run_until_complete(asyncio_loop.shutdown_asyncgens())
+        asyncio_loop.close()
+        print("Event loop closed")
+
+def stop_loop():
+    global asyncio_loop
+    asyncio_stop_event.set()
+    # for task in asyncio.all_tasks(asyncio_loop):
+    #      task.cancel()
+ 
+    # asyncio_loop.stop()
+
+
 
 if __name__ == "__main__":
     set_icon_title(TITLE)
@@ -437,8 +473,13 @@ if __name__ == "__main__":
     #threading.Thread(target=monitor_all_subscriptions).start()
     #asyncio.run(monitor_subscriptions_websocket())
     print("#1")
-    asyncio.run(monitor_subscriptions_websocket())
-    #threading.Thread(target=monitor_asyncio_subscriptions_websocket).start()
+
+    asyncio_thread = threading.Thread(target=monitor_asyncio_subscriptions_websocket)
+    asyncio_thread.start()
+    time.sleep(1)
+    # for sig in (signal.SIGINT, signal.SIGTERM):
+    #     asyncio_loop.add_signal_handler(sig, stop_loop)
+
     #threading.Thread(target=monitor_file_changes).start()
-    #icon.run(setup=setup)
+    icon.run(setup=setup)
 
