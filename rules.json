@@ -3,7 +3,9 @@
     {   "delay": "10",
         "icon": "bubble2y.png",
         "sound": "rocketicon_v3.wav",
-        "escalation": 300
+        "escalation": 300,
+        "preview":"False",
+		"priority": 10
     },
     "rules": [
         {
@@ -27,25 +29,32 @@
             "icon": "bubble2r.png",
             "sound": "rocketicon_v2.wav",
             "active": "True"
-        }
+        },
         {
            "name": "type:*",
             "delay": "10",
             "icon": "bubble2l.png",
             "sound": "rocketicon_v2.wav",
-            "active": "True"
+            "active": "True",
+			"preview":"True",
+			"priority": 1
+			"
         }        
     ]
 }
-
-;Regu³y s¹ przetwarzane w kolejnoœci wyst¹pienia. Przetwarzanie zatrzymuje siê po dopasowaniu pierszej regu³y.
-;"name": nazwa lub rodzaj kana³u np:
-;  "name": "type:*" - wszystkie kana³y
-;  "name": "type:p" - wszystkie kana³y typu Public
-;  "name": "type:d" - wszystkie kana³y typu Direct (od zwyk³ych u¿ytkowników)
-;  "name": "XYZ"    - kana³ o nazwie równej dok³adnie XYZ: mo¿e to byæ nazwa u¿ytkownika lub nazwa kana³u
-;"ignore" : "True|False" - ignoruj ten kana³ - brak powiadomieñ
-;"delay": "10" - czas opóŸnienia informowania o nowych wiadomoœciach w sekundach: minium to 10 sek
-;"icon": "bubble2.png|bubble2b.png|bubble2g.png|bubble2l.png|bubble2o.png|bubble2p.png|bubble2r.png|bubble2y.png", - ikona powiadomienia (zobacz folder icons aby zobaczyæ dostêpne ikony)
-;"sound": "rocketicon_v1.wav|rocketicon_v2.wav|rocketicon_v3.wav", - dziwiêk powiadomnienia
-;"active": "True|False" - czy regu³a aktywna. Regu³a nieaktywna jest pomijana 
+;How to use this file:
+;
+;Rules are matched in order of appearence. Processing stops after finding a first matching rule.
+;"defaults" sections - defines default values for icon, sound and delay to be used if matched rule lacks any of these properties
+;"rules"  section - set of rules to apply when receiveing a new message. Below are rule properties you can edit:
+;"name": channel name or channel type. Aviable entries:
+;  "name": "type:*" - all channels
+;  "name": "type:p" - all Public channels
+;  "name": "type:d" - all Direct channels - channels with singel users or named users groups
+;  "name": "XYZ"    - channel named exactly: "XYZ"
+;"ignore" : "True|False" - ignore this channel; no notifications will be shown
+;"delay": "10" - notification delay time in seconds 
+;"icon": "bubble2.png|bubble2b.png|bubble2g.png|bubble2l.png|bubble2o.png|bubble2p.png|bubble2r.png|bubble2y.png", - notifications icon for matched rule
+;"sound": "rocketicon_v1.wav|rocketicon_v2.wav|rocketicon_v3.wav", - notification sound
+;"escalation": time in seconds, to display windows notifications about unread messages
+;"active": "True|False" - tells if the current rule is Active or not; allows to temporarily disable rule without deleting it 

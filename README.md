@@ -1,5 +1,5 @@
 # Rocket Icon
-- I use Rocket.Chat app at work and sometimes I find it very disturbing when too many people wants to say too many things too often. I think this application lacks possibility to delay some notifications and to let user distinguish before less and more important messages.
+- I use Rocket.Chat app at work and sometimes I find it very disturbing when too many people wants to say too many things too often. I think this application lacks possibility to delay some notifications and to let user distinguish between less and more important messages.
 - This software is created to address some of these issues. Te Rocket Icon creates alternarive Windows tray icon. It enables you to have:
 	- different icons and sounds notifications for differnt channels
 	- customized delay periods for notifications - you can for example define notification frequency to be lower for some public boradcast channel
