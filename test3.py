@@ -27,16 +27,29 @@ def monitor(channel_id, unread, msg_id, msg, qualifier):
         print("   -- handle_message1 usunieto ")
 
 monitor("motest", True, "msg_101", "Ala ma kota", "None")
-monitor("motest", True, "msg_102", "Ela ma kota", "None")
+monitor("motest", True, "msg_102", "Ela ma kota", "videoconf")
 monitor("motest", True, "msg_103", "ula ma kota", "None")
 
 monitor("qq", True, "msg_203", "wiadomosc 1", "None")
 monitor("qq", True, "msg_202", "wiadomosc 2", "video")
 
+def get_last_message_text(rid):
+    if rid not in g_unread_subscription_list or not g_unread_subscription_list[rid]:
+        return None
+    last_message = g_unread_subscription_list[rid][-1]
+    last_msg_content = next(iter(last_message.values()))
+    if last_msg_content.get("qualifier") == "videoconf":
+        txt = "Incoming phone call"
+    else:
+        txt = last_msg_content.get("text")
+    return txt
+
 print(g_unread_subscription_list)
 print(json.dumps(g_unread_subscription_list, indent=4))
-print(len( g_unread_subscription_list.get("motest")))
-print(len( g_unread_subscription_list))
+
+#print(len( g_unread_subscription_list))
+print(get_last_message_text("motest"))
+
 # monitor("qq", False, "msg_203","","")
 # monitor("qq", False, "msg_203","","")
 # monitor("qq", False, "msg_202","","")
@@ -44,6 +57,4 @@ print(len( g_unread_subscription_list))
 # print(json.dumps(g_unread_subscription_list, indent=4))
 # print(len( g_unread_subscription_list.get("motest")))
 # print(len( g_unread_subscription_list))
-
-for x in g_unread_subscription_list:
-    print(x)
+ 

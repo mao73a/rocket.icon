@@ -1,1 +1,1 @@
-Dorobic videoconf w find_matching_rule
+Dorobić proiorytet w find_matching_rule: regula ktora jest wyzej ma wyzszy priorytet

@@ -46,12 +46,12 @@ pause_event = threading.Event()  # Event to control pausing
 asyncio_stop_event = None
 asyncio_loop = None
 g_rocketChat = None
+g_notification_icon_current_priority = 99999
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 last_fulfilled = {}
 escalation_times = {}
 g_subscription_dict = {}
 g_unread_messages = {}
-g_unread_counts = {}
 subscription_lock = threading.Lock()
 
 
@@ -106,9 +106,16 @@ def set_basic_image():
 def set_error_image():
     icon.icon = Image.open("icons/bubble2error.png")
 
-def set_notification_image(icon_name):
-    print(f"  set_notification_image {icon_name}")
-    icon.icon = Image.open(f"icons/{icon_name}")
+def set_notification_image(icon_name, prior=0):
+    global g_notification_icon_current_priority    
+    print(f" set_notification_image {icon_name}, pr={prior} currp={g_notification_icon_current_priority}")
+    if not icon_name:
+        g_notification_icon_current_priority = prior
+        return
+    if g_notification_icon_current_priority>prior:
+        g_notification_icon_current_priority = prior
+        print(f"  set_notification_image {icon_name}")
+        icon.icon = Image.open(f"icons/{icon_name}")
 
 def set_delay_image():
     icon.icon = Image.open("icons/bubble2delay.png")
@@ -156,7 +163,7 @@ def get_subscription_for_channel(channel_id):
         set_error_image()
         return None    
     
-def get_subscriptions_for_channels(channels):
+def get_channels_for_messages(channels):
     updates = []
     for channel_id in channels:
           json = get_subscription_for_channel(channel_id)
@@ -177,7 +184,8 @@ def has_videoconf_qualifier(unread_messages, value):
 
 
 def find_matching_rule(channel_name, channel_type, unread_messages):
-        for rule in RULES:
+        for i, rule in enumerate(RULES, start=1):
+            rule["prior"] = i
             if (rule['name'] == channel_name or rule['name'] == "type:*" or rule['name'] == f"type:{channel_type}") and rule.get('active', "True") == "True":
                 if rule.get('is_videoconf'):
                     if has_videoconf_qualifier(unread_messages, rule.get('is_videoconf')):
@@ -226,6 +234,7 @@ def check_escalation(channel, rule):
                 elapsed_time = (now - escalation_times[channel]).total_seconds()
                 if elapsed_time >= escalation_time:
                     icon.notify(f"You have still unread messages from {channel}", "Unread messages")
+                    escalation_times[channel] = now
             else:
                 escalation_times[channel] = now
 
@@ -234,6 +243,16 @@ def set_icon_title(title):
             title = title[:128]
         icon.title = title
 
+def get_last_message_text(rid):
+    if rid not in g_unread_messages or not g_unread_messages[rid]:
+        return None
+    last_message = g_unread_messages[rid][-1]
+    last_msg_content = next(iter(last_message.values()))
+    if last_msg_content.get("qualifier") == "videoconf":
+        txt = "Incoming phone call"
+    else:
+        txt = last_msg_content.get("text")
+    return txt
 
 def process_subscription(sub, out_unread_counts):
     open = sub.get('open')
@@ -248,9 +267,12 @@ def process_subscription(sub, out_unread_counts):
             matching_rule = {}
             if all_rules_fulfilled(fname, chtype, matching_rule, userMentions, g_unread_messages[rid]):
                 print(f"New message in '{fname}' Rule: {matching_rule.get('name', 'Default')}")
-                set_notification_image(matching_rule.get("icon", DEFAULTS.get("icon")))
+                set_notification_image(matching_rule.get("icon", DEFAULTS.get("icon")), matching_rule.get("prior"))
                 if out_unread_counts.get(fname, 0) < unread:
                     play_sound(matching_rule.get("sound", DEFAULTS.get("sound")))
+                    if (matching_rule.get("preview", DEFAULTS.get("preview"))) == "True":
+                        icon.notify(f"{get_last_message_text(rid)}", fname)
+
                 out_unread_counts[fname] = unread
                 check_escalation(fname, matching_rule)
         else:
@@ -265,14 +287,8 @@ def process_subscription(sub, out_unread_counts):
 
 def process_subscriptions(updates, unread_counts):
     for sub in updates:
-        #rid = sub.get('rid')
-        # fname = sub.get('fname')
         process_subscription(sub, unread_counts)
-        # if unread_counts.get(fname, 0) == 0:
-        #    del unread_messages[rid]
-        rid = sub.get('rid')
-        print(g_unread_messages.get(rid))
-
+    #print(unread_counts)
     if unread_counts:
         summary = "\n".join([f"{fname}: {unread}" for fname, unread in unread_counts.items()])
     else:
@@ -304,9 +320,10 @@ def monitor_all_subscriptions():
             continue
 
         with subscription_lock:      
-            data = get_subscriptions_for_channels(g_unread_messages)
+            data = get_channels_for_messages(g_unread_messages)
             if data:
                 updates = data.get('update', [])
+                set_notification_image(None, 99999) #reset priority
                 process_subscriptions(updates, unread_counts)
 
             if len(unread_counts) == 0:
@@ -315,7 +332,7 @@ def monitor_all_subscriptions():
 
 
 
-#{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg"} ]}
+#{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
 
 def remove_message(channel_id, msg_id):
      return
@@ -327,7 +344,7 @@ def remove_message(channel_id, msg_id):
 def handle_message(channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
     with subscription_lock:
         print(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
-        #qualifier=videoconf
+        #qualifier=
         if not g_unread_messages.get(channel_id):
             if not unread:
                 return
