@@ -17,10 +17,11 @@ class RulesManager:
         self._escalation_times = {}        
         self.config_mtime = os.path.getmtime(self.config_path)
         self.rules_mtime = os.path.getmtime(self.rules_path)
-        self.load_config()
-        self.load_rules()
         self._on_escalation_callback = None
         self._on_file_changed = None
+        self.unread_counts = {}
+        self.load_config()
+        self.load_rules()
         self.unread_counts = {}
            
 
@@ -165,9 +166,8 @@ class RulesManager:
                     self._escalation_times[channel] = now  
 
     def reset_messages_counters(self):
-        if self.unread_counts:
-            print("reset_messages_counters")
-            self.unread_counts = {}                   
+        print("reset_messages_counters")
+        self.unread_counts = {}                   
 
     def set_on_unread_message(self, callback):
         self._on_unread_message = callback
