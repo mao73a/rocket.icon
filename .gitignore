@@ -6,3 +6,4 @@ config.json
 *.exe
 *.spec
 subscriptions.txt
+.aider*

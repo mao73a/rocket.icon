@@ -1,94 +1,55 @@
 import pystray
 from PIL import Image
 from pystray import MenuItem as item
-import sys
 import time
 import requests
 import json
 import threading
 import os
 from datetime import datetime, timedelta
-import winsound
-import shutil
+
+
 from rocketchat_async import RocketChat
 import asyncio
 import random
-import signal
+from icon_manager import icon_manager
+from rules_manager import rules_manager
 
 TITLE = "Better Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
-# Create the icon
-icon = pystray.Icon("basic")
 
-# Get the local user directory path
-local_user_dir = os.path.expanduser("~/.rocketIcon")
-
-# Check if .rocketIcon directory exists, if not, create it and copy files
-def ensure_local_files():
-    if not os.path.exists(local_user_dir+'/config.json'):
-        try:
-            os.makedirs(local_user_dir)
-        finally:            
-            shutil.copy('config.json', os.path.join(local_user_dir, 'config.json'))
-            shutil.copy('rules.json', os.path.join(local_user_dir, 'rules.json'))
-
-ensure_local_files()
-
-# Paths to the local config and rules files
-config_path = os.path.join(local_user_dir, 'config.json')
-rules_path = os.path.join(local_user_dir, 'rules.json')
-
-# Get initial modification times
-config_mtime = os.path.getmtime(config_path)
-rules_mtime = os.path.getmtime(rules_path)
+rules_manager.ensure_local_files()
+ 
 stop_event = threading.Event()
 pause_event = threading.Event()  # Event to control pausing
 asyncio_stop_event = None
 asyncio_loop = None
 g_rocketChat = None
-g_notification_icon_current_priority = 99999
+
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
-last_fulfilled = {}
-escalation_times = {}
+
 g_subscription_dict = {}
 g_unread_messages = {}
 subscription_lock = threading.Lock()
 
-
-def load_json_with_comments(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-    lines = [line for line in lines if not line.strip().startswith(';')]
-    json_content = '\n'.join(lines)
-    return json.loads(json_content)
-
 # Load configuration from config.json
 def load_config():
     global config, ROCKET_USER_ID, ROCKET_TOKEN, SERVER_ADDRESS, ROCKET_PROGRAM, TITLE, HEADERS
-    config = load_json_with_comments(config_path)
-    ROCKET_USER_ID = config['ROCKET_USER_ID']
-    ROCKET_TOKEN = config['ROCKET_TOKEN']
-    SERVER_ADDRESS = config['SERVER_ADDRESS']
-    ROCKET_PROGRAM = config['ROCKET_PROGRAM']
-    HEADERS = {
-        'X-Auth-Token': ROCKET_TOKEN,
-        'X-User-Id': ROCKET_USER_ID
-    }
-    icon.notify("Config loaded", TITLE)
-
-# Load rules from rules.json
-def load_rules():
-    global DEFAULTS, RULES
     try:
-        rules_config = load_json_with_comments(rules_path)
-        DEFAULTS = rules_config['defaults']
-        RULES = rules_config['rules']
-        icon.notify("Rules loaded", TITLE)
+        config = rules_manager.load_config()
+        ROCKET_USER_ID = config['ROCKET_USER_ID']
+        ROCKET_TOKEN = config['ROCKET_TOKEN']
+        SERVER_ADDRESS = config['SERVER_ADDRESS']
+        ROCKET_PROGRAM = config['ROCKET_PROGRAM']
+        HEADERS = {
+            'X-Auth-Token': ROCKET_TOKEN,
+            'X-User-Id': ROCKET_USER_ID
+        }
+        icon_manager.notify("Config loaded", TITLE)     
     except Exception as e:
-        icon.notify("Error reading rules.json file. Please go to Rules and verify your JSON syntax, and try again.", "Rules error")
-        set_icon_title("Error reading rules.json file. Please go to Rules and verify your JSON syntax, and try again.")
-        set_error_image()
-        RULES = {}
+        print(f"Error reading config file {e}")
+
+
 
 def convert_to_wsl_address(server_address):
     if server_address.startswith("https://"):
@@ -100,29 +61,6 @@ def convert_to_wsl_address(server_address):
     return wsl_address
 
 
-def set_basic_image():
-    icon.icon = Image.open("icons/bubble2.png")
-
-def set_error_image():
-    icon.icon = Image.open("icons/bubble2error.png")
-
-def set_notification_image(icon_name, prior=0):
-    global g_notification_icon_current_priority    
-    print(f" set_notification_image {icon_name}, pr={prior} currp={g_notification_icon_current_priority}")
-    if not icon_name:
-        g_notification_icon_current_priority = prior
-        return
-    if g_notification_icon_current_priority>prior:
-        g_notification_icon_current_priority = prior
-        print(f"  set_notification_image {icon_name}")
-        icon.icon = Image.open(f"icons/{icon_name}")
-
-def set_delay_image():
-    icon.icon = Image.open("icons/bubble2delay.png")
-
-def play_sound(sound_name):
-    print(f"  play_sound {sound_name}")
-    winsound.PlaySound(f"sounds/{sound_name}", winsound.SND_FILENAME | winsound.SND_ASYNC)
 
 def get_all_subscriptions():
     try:
@@ -131,13 +69,13 @@ def get_all_subscriptions():
             return response.json()
         else:
             print(f"Failed to fetch data. Status code: {response.status_code}")
-            set_icon_title(f"Failed to fetch data. Status code: {response.status_code}")
-            set_error_image()
+            icon_manager.set_icon_title(f"Failed to fetch data. Status code: {response.status_code}")
+            icon_manager.set_error_image()
             return None
     except Exception as e:
         print(f"Network error: {e}")
-        set_icon_title(f"Network error: {e}")
-        set_error_image()
+        icon_manager.set_icon_title(f"Network error: {e}")
+        icon_manager.set_error_image()
         return None
     
 
@@ -155,12 +93,12 @@ def get_subscription_for_channel(channel_id):
         else:
             print(f"Failed to fetch data. Status code: {response.status_code}")
             set_icon_title(f"Failed to fetch data. Status code: {response.status_code}")
-            set_error_image()
+            icon_manager.set_error_image()
             return None
     except Exception as e:
         print(f"Network error: {e}")
         set_icon_title(f"Network error: {e}")
-        set_error_image()
+        icon_manager.set_error_image()
         return None    
     
 def get_channels_for_messages(channels):
@@ -170,78 +108,6 @@ def get_channels_for_messages(channels):
           updates.append(json.get('subscription'))
     return {"update":updates}
     
-
-def has_videoconf_qualifier(unread_messages, value):
-    # Iterate through each message in the list for the given channel_id
-    for message in unread_messages:
-        # Each message is a dictionary with msg_id as the key and the actual message as the value
-        for msg_id, msg_content in message.items():
-            if   value=="True" and      msg_content.get("qualifier") == "videoconf":
-                return True
-            elif value=="False" and not msg_content.get("qualifier") == "videoconf":
-                return True
-    return False
-
-
-def find_matching_rule(channel_name, channel_type, unread_messages):
-        for i, rule in enumerate(RULES, start=1):
-            rule["prior"] = i
-            if (rule['name'] == channel_name or rule['name'] == "type:*" or rule['name'] == f"type:{channel_type}") and rule.get('active', "True") == "True":
-                if rule.get('is_videoconf'):
-                    if has_videoconf_qualifier(unread_messages, rule.get('is_videoconf')):
-                        return rule
-                else:
-                    return rule
-
-        return None
-
-
-def all_rules_fulfilled(channel_name, channel_type, output_rule, userMentions, unread_messages):
-        global last_fulfilled
-
-        matching_rule = find_matching_rule(channel_name, channel_type, unread_messages)
-
-        if not matching_rule:
-            print("No matching rule found")
-            return False
-
-        output_rule.update(matching_rule)
-
-        if matching_rule.get('ignore', "False") == "True":
-            return False
-
-        delay = int(matching_rule.get('delay', DEFAULTS.get('delay', "10")))
-        now = datetime.now()
-
-        if channel_name in last_fulfilled:
-            elapsed_time = (now - last_fulfilled[channel_name]).total_seconds()
-            if elapsed_time >= delay or userMentions > 0:
-                last_fulfilled[channel_name] = now
-                return True
-            else:
-                return False
-        else:
-            last_fulfilled[channel_name] = now
-            return True
-
-
-
-def check_escalation(channel, rule):
-        now = datetime.now()
-        escalation_time = int(rule.get('escalation',  DEFAULTS.get('escalation', "99999999999") ))
-        if escalation_time > 0:
-            if channel in escalation_times:
-                elapsed_time = (now - escalation_times[channel]).total_seconds()
-                if elapsed_time >= escalation_time:
-                    icon.notify(f"You have still unread messages from {channel}", "Unread messages")
-                    escalation_times[channel] = now
-            else:
-                escalation_times[channel] = now
-
-def set_icon_title(title):
-        if len(title) > 128:
-            title = title[:128]
-        icon.title = title
 
 def get_last_message_text(rid):
     if rid not in g_unread_messages or not g_unread_messages[rid]:
@@ -254,81 +120,45 @@ def get_last_message_text(rid):
         txt = last_msg_content.get("text")
     return txt
 
-def process_subscription(sub, out_unread_counts):
-    open = sub.get('open')
-    if open == True:
-        unread = int(sub.get('unread'))
-        fname = sub.get('fname')
-        chtype = sub.get('t')
-        rid = sub.get('rid')
-        userMentions = sub.get('userMentions', 0)
-
-        if unread > 0:
-            matching_rule = {}
-            if all_rules_fulfilled(fname, chtype, matching_rule, userMentions, g_unread_messages[rid]):
-                print(f"New message in '{fname}' Rule: {matching_rule.get('name', 'Default')}")
-                set_notification_image(matching_rule.get("icon", DEFAULTS.get("icon")), matching_rule.get("prior"))
-                if out_unread_counts.get(fname, 0) < unread:
-                    play_sound(matching_rule.get("sound", DEFAULTS.get("sound")))
-                    if (matching_rule.get("preview", DEFAULTS.get("preview"))) == "True":
-                        icon.notify(f"{get_last_message_text(rid)}", fname)
-
-                out_unread_counts[fname] = unread
-                check_escalation(fname, matching_rule)
-        else:
-            if fname in out_unread_counts:
-                del out_unread_counts[fname]
-            if fname in escalation_times:
-                del escalation_times[fname]
-            if out_unread_counts.get(fname, 0) == 0:
-                if g_unread_messages.get(rid):
-                    del g_unread_messages[rid]           
-
-
-def process_subscriptions(updates, unread_counts):
-    for sub in updates:
-        process_subscription(sub, unread_counts)
-    #print(unread_counts)
-    if unread_counts:
-        summary = "\n".join([f"{fname}: {unread}" for fname, unread in unread_counts.items()])
-    else:
-        summary = "No new messages"
-
-    if len(unread_counts) == 0:
-        set_basic_image()
-    set_icon_title(summary)
-
-
-def rules_are_loaded():
-    if len(RULES) == 0:
-        set_error_image()
-        stop_event.wait(5)
-        return False
-    return True
-
 
 def monitor_all_subscriptions():
-    unread_counts = {}
     time.sleep(1)
     print(f"Starting loop")
-    while not stop_event.is_set():
-        pause_event.wait()  # Wait for the pause event to be set
+    try:
+        while not stop_event.is_set():
+            pause_event.wait()  # Wait for the pause event to be set
 
-        if not rules_are_loaded():
-            set_error_image()
-            stop_event.wait(10)
-            continue
+            if not rules_manager.rules_are_loaded():
+                icon_manager.set_error_image()
+                icon_manager.set_icon_title("Error reading rules.json file. Please go to Rules and verify your JSON syntax, and try again.")
+                stop_event.wait(10)
+                continue
 
-        with subscription_lock:      
-            data = get_channels_for_messages(g_unread_messages)
-            if data:
-                updates = data.get('update', [])
-                set_notification_image(None, 99999) #reset priority
-                process_subscriptions(updates, unread_counts)
+            if not rules_manager.config_is_loaded():
+                icon_manager.set_error_image()
+                icon_manager.set_icon_title("Error reading config.json file. Please go to Settings and verify your JSON syntax, and try again.")
+                stop_event.wait(10)
+                continue          
 
-            if len(unread_counts) == 0:
-                set_basic_image()
-        stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
+            with subscription_lock:      
+                data = get_channels_for_messages(g_unread_messages)
+                if data:
+                    updates = data.get('update', [])
+                    icon_manager.reset_priority()
+                    for sub in updates:
+                        rules_manager.process_subscription(sub, g_unread_messages)                
+                    if rules_manager.unread_counts:
+                        summary = "\n".join([f"{fname}: {unread}" for fname, unread in rules_manager.unread_counts.items()])
+                    else:
+                        summary = "No new messages"
+                    icon_manager.set_icon_title(summary)                
+
+
+                if len(rules_manager.unread_counts) == 0:
+                    icon_manager.set_basic_image()
+            stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
+    finally:
+        stop_asyncio_subscriptions_websocket()
 
 
 
@@ -363,11 +193,11 @@ def handle_message(channel_id, sender_id, msg_id, thread_id, msg, qualifier, unr
 async def monitor_subscriptions_websocket():
     global asyncio_stop_event
     global g_rocketChat
-    set_basic_image()
+    icon_manager.set_basic_image()
     asyncio_stop_event = asyncio.Event()
     while not asyncio_stop_event.is_set():
-        if len(RULES) == 0:
-            set_error_image()
+        if not rules_manager.rules_are_loaded() or not rules_manager.config_is_loaded():
+            icon_manager.set_error_image()
             await asyncio.sleep(10)
             continue
 
@@ -393,7 +223,7 @@ async def monitor_subscriptions_websocket():
                         channel_id = sub.get('rid')
                         open = sub.get('open')
                         if open==True:
-                            matching_rule = find_matching_rule(fname, chtype, [])
+                            matching_rule = rules_manager.find_matching_rule(fname, chtype, [])
                             if matching_rule and matching_rule.get('ignore', "False") == "False":
                                 g_subscription_dict[channel_id]=sub
                                 await g_rocketChat.subscribe_to_channel_messages(channel_id,  handle_message)
@@ -401,8 +231,8 @@ async def monitor_subscriptions_websocket():
                 # 2. ...and then simply wait for the registered events.
                 await g_rocketChat.run_forever()
         except  (RocketChat.ConnectionClosed, RocketChat.ConnectCallFailed) as e:
-                set_icon_title(f"Connection failed: {e}")
-                set_error_image()
+                icon_manager.set_icon_title(f"Connection failed: {e}")
+                icon_manager.set_error_image()
                 print(f'Connection failed: {e}. Waiting a few seconds...')
                 await asyncio.sleep(random.uniform(4, 8))
                 print('Reconnecting...')
@@ -411,23 +241,6 @@ async def monitor_subscriptions_websocket():
 
 
 
-def monitor_file_changes():
-    global config_mtime, rules_mtime
-    while not stop_event.is_set():
-        new_config_mtime = os.path.getmtime(config_path)
-        new_rules_mtime = os.path.getmtime(rules_path)
-
-        if new_config_mtime != config_mtime:
-            config_mtime = new_config_mtime
-            load_config()
-            print("Config reloaded.")
-
-        if new_rules_mtime != rules_mtime:
-            rules_mtime = new_rules_mtime
-            load_rules()
-            print("Rules reloaded.")
-
-        time.sleep(5)
 
 
 def on_clicked_quit(icon, item):
@@ -444,16 +257,16 @@ def on_clicked_quit(icon, item):
 def on_clicked_show(icon, item):
     global pause_invoked
     if pause_invoked:
-        icon.icon = Image.open("icons/bubble2delay.png")
+        icon_manager.set_delay_image()
     else:
-        icon.icon = Image.open("icons/bubble2launch.png")
+        icon_manager.set_launch_image()
     os.startfile(ROCKET_PROGRAM)
 
 def on_clicked_settings(icon, item):
-    os.startfile(config_path)
+    os.startfile(rules_manager.config_path)
 
 def on_clicked_rules(icon, item):
-    os.startfile(rules_path)
+    os.startfile(rules_manager.rules_path)
 
 def pause_for_duration(duration):
     global pause_invoked
@@ -462,15 +275,15 @@ def pause_for_duration(duration):
         pause_event.clear()  # Clear the pause event to block monitoring
         pause_invoked = True
         resume_time = datetime.now() + timedelta(seconds=duration)
-        set_icon_title(f"Paused until {resume_time.strftime('%H:%M')}")
-        set_delay_image()
+        icon_manager.set_icon_title(f"Paused until {resume_time.strftime('%H:%M')}")
+        icon_manager.set_delay_image()
         for _ in range(duration):
             if stop_event.is_set():
                 break
             time.sleep(1)
         pause_event.set()  # Set the pause event to resume monitoring
         pause_invoked = False
-        set_icon_title(TITLE)
+        icon_manager.set_icon_title(TITLE)
 
     threading.Thread(target=stop).start()
 
@@ -485,11 +298,11 @@ def on_clicked_stop_60(icon, item):
 
 def on_clicked_resume(icon, item):
     pause_event.set()  # Set the pause event to resume monitoring
-    set_icon_title(TITLE)
+    icon_manager.set_icon_title(TITLE)
     print("Resuming...")
 
 def on_clicked_separator(icon, item):
-    set_basic_image()
+    icon_manager.set_basic_image()
     return
 
 def on_clicked_subscriptions(icon, item):
@@ -534,24 +347,44 @@ def monitor_asyncio_subscriptions_websocket():
 def stop_asyncio_subscriptions_websocket():
     global asyncio_loop
     asyncio_stop_event.set()
-    g_rocketChat.stop()
+    if g_rocketChat:
+        g_rocketChat.stop()
     # g_rocketChat.cancel_task(asyncio_loop)
+
+def my_on_escalation(channel):
+     icon_manager.notify(f"You have still unread messages from {channel}", "Unread messages")
+
+def my_on_file_changed(filename):
+    if filename=='config.json':
+        load_config()
+    else:
+        icon_manager.notify(f"Rules reloaded", "Rules")  
+
+def my_on_unread_message(matching_rule, subscription, is_new_message):
+    fname = subscription.get('fname')
+    rid = subscription.get('rid')    
+    icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"))
+    if is_new_message:
+        icon_manager.play_sound(matching_rule.get("sound", rules_manager.DEFAULTS.get("sound")))
+        if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
+            icon_manager.notify(f"{get_last_message_text(rid)}", fname)        
 
 
 
 if __name__ == "__main__":
-    set_icon_title(TITLE)
+    icon_manager.set_icon_title(TITLE)
     load_config()
-    load_rules()
-    set_basic_image()
+    rules_manager.set_on_escalation(my_on_escalation)
+    rules_manager.set_on_file_changed(my_on_file_changed, stop_event)  # starts a new thread   
+    rules_manager.set_on_unread_message(my_on_unread_message)
     pause_event.set()  # Ensure the pause event is initially set to allow monitoring
     threading.Thread(target=monitor_all_subscriptions).start()
-    threading.Thread(target=monitor_file_changes).start()    
+       
     threading.Thread(target=monitor_asyncio_subscriptions_websocket).start()
     time.sleep(1)
     # for sig in (signal.SIGINT, signal.SIGTERM):
     #     asyncio_loop.add_signal_handler(sig, stop_loop)
 
 
-    icon.run(setup=setup)
+    icon_manager.icon.run(setup=setup)
 
