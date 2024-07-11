@@ -22,7 +22,7 @@ class RulesManager:
         self.unread_counts = {}
         self.load_config()
         self.load_rules()
-        self.unread_counts = {}
+ 
            
 
     # Check if .rocketIcon directory exists, if not, create it and copy files
