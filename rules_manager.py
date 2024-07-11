@@ -169,6 +169,11 @@ class RulesManager:
         print("reset_messages_counters")
         self.unread_counts = {}                   
 
+    def set_last_fulfillment_to_previous_day(self):
+        yesterday = datetime.now() - timedelta(days=1)
+        for channel in self._last_fullfillment_time:
+            self._last_fullfillment_time[channel] = yesterday
+
     def set_on_unread_message(self, callback):
         self._on_unread_message = callback
 
