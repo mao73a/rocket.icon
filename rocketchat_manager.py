@@ -61,7 +61,7 @@ class RocketchatManager:
         return data
         
     def get_subscription_for_channel(self,channel_id):
-        return self.get_mock_subscriptions()
+        #return self.get_mock_subscriptions()
         try:
             response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/subscriptions.getOne?roomId={channel_id}', headers=self.HEADERS)
             if response.status_code == 200:
@@ -137,6 +137,12 @@ class RocketchatManager:
                     del self.unread_messages[channel_id]
                 print("   -- handle_message1 usunieto ")
 
+    def add_historical_message(self, channel_id):
+        if not self.unread_messages.get(channel_id):                    
+            self.unread_messages[channel_id] = []        
+        self.unread_messages[channel_id].append({'historical': {"text": "", "qualifier":""}})
+        print("   -- add_historical_message dodano ")
+
     #asyncio.run(monitor_subscriptions_websocket()
     async def monitor_subscriptions_websocket(self):
         self._stop_event = asyncio.Event()        
@@ -174,8 +180,11 @@ class RocketchatManager:
                                     self._subscription_dict[channel_id]=sub
                                     await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
                                     print(f'subscribed to  {fname}  {channel_id}')
+                                    
                                     if self._on_unread_message and unread>0:
-                                        self._on_unread_message(matching_rule, sub, False)
+                                          self.add_historical_message(channel_id)  
+                                    #     self._on_unread_message(matching_rule, sub)
+                                    #     print(f'  _on_unread_message: {unread}')
                     # 2. ...and then simply wait for the registered events.
                     await self._rocketChat.run_forever()
                 else:
