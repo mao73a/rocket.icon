@@ -181,8 +181,8 @@ class RocketchatManager:
                     print('Reconnecting...')
 
     async def unsubscribe_all(self):
-        for sub in self._subscription_dict:
-            await self._rocketChat.unsubscribe(sub)
+        for channel_id in self._subscription_dict.keys():
+            await self._rocketChat.unsubscribe(channel_id)
 
     def monitor_asyncio_subscriptions_websocket(self):
         asyncio_loop = asyncio.new_event_loop()
