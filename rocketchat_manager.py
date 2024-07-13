@@ -4,21 +4,23 @@ from rules_manager import rules_manager
 from rocketchat_async import RocketChat
 import requests
 import json
+import time
 
 class RocketchatManager:
-    def __init__(self, subscription_lock, pause_event):
+    def __init__(self, subscription_lock):
         self._ROCKET_USER_ID = ''
         self._ROCKET_TOKEN = ''
         self._SERVER_ADDRESS = ''
         self.HEADERS = {}
         self._on_error_callback = None
         self._subscription_lock = subscription_lock
-        self._pause_event = pause_event
+ 
         self._stop_event = None
         self.unread_messages = {}
         self._rocketChat = None
         self._subscription_dict = {}
-        self._on_unread_message = None        
+        self._on_unread_message = None     
+        self._rc_manager_thread = None   
 
     @property
     def ROCKET_USER_ID(self):
@@ -55,11 +57,26 @@ class RocketchatManager:
     def set_on_unread_message(self, callback):
         self._on_unread_message = callback
 
+    def set_on_reload(self, callback):
+        self._set_on_reload = callback        
+
     def get_mock_subscriptions(self):
         with open('mock_sub.json', 'r') as file:
             data = json.load(file)
         return data
         
+    def mark_messages_as_read(self, room_id):
+        try:
+            response = requests.post(f'{self.SERVER_ADDRESS}/api/v1/subscriptions.read', headers=self.HEADERS, json={"rid": room_id})
+            if response.status_code == 200:
+                return True
+            else:
+                self.do_error(f"Failed to mark messages as read for room {room_id}. Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.do_error(f"Network error: {e}")
+            return False
+                
     def get_subscription_for_channel(self,channel_id):
         #return self.get_mock_subscriptions()
         try:
@@ -110,14 +127,20 @@ class RocketchatManager:
             txt = last_msg_content.get("text")
         return txt
 
+
+    def handle_channel_changes(self, channel_id, channel_type):
+        print("===== handle_channel_changes =====")
+        print(f"  channel_id={channel_id} channel_type={channel_type}")        
+        self.restart()
+
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
 
     def remove_message(self, channel_id, msg_id):
-        return
         for msg_dict in self.unread_messages[channel_id]:
             if msg_id in msg_dict:
                 self.unread_messages[channel_id].remove(msg_dict)
                 break
+        self.remove_all_historical_messages(channel_id)
 
     def handle_message(self, channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
         with self._subscription_lock:
@@ -160,7 +183,6 @@ class RocketchatManager:
                 continue
 
             print("#4")
-            self._pause_event.wait()  # Wait for the pause event to be set
             try:
                 print("#5")
                 self._rocketChat = RocketChat()
@@ -170,6 +192,8 @@ class RocketchatManager:
                 print("#6")
                 # 1. Set up the desired callbacks...
                 #for channel_id, channel_type in await rc.get_channels(): //to few informations returned :-(
+                await self.unsubscribe_all()
+                await self._rocketChat.subscribe_to_channel_changes(self.handle_channel_changes)
                 data = self.get_all_subscriptions()
                 print("#7")
                 if data:
@@ -206,6 +230,7 @@ class RocketchatManager:
     async def unsubscribe_all(self):
         for channel_id in self._subscription_dict.keys():
             await self._rocketChat.unsubscribe(channel_id)
+        self._subscription_dict={}
 
     def monitor_asyncio_subscriptions_websocket(self):
         asyncio_loop = asyncio.new_event_loop()
@@ -225,8 +250,29 @@ class RocketchatManager:
         if self._rocketChat:
             self._rocketChat.stop()
 
+    def restart(self):
+        print("===== rocket_manager Restart =====")        
+        if self._rc_manager_thread.is_alive():
+
+            print("  restart begin")
+            self._stop_event.set()
+            if self._rocketChat:
+                self._rocketChat.stop()
+            time.sleep(1)
+            if self._set_on_reload:
+                self._set_on_reload()
+            self._rc_manager_thread.join()  # Wait for the thread to finish
+            self._stop_event.clear()       
+            self.start()  
+            print("  restart end")             
+
     def start(self):
-        threading.Thread(target=self.monitor_asyncio_subscriptions_websocket).start()
+        self._rc_manager_thread = threading.Thread(target=self.monitor_asyncio_subscriptions_websocket)
+        self._rc_manager_thread.start()
+
+    def mark_read(self):
+        mark_messages_as_read
+
 
 
 
