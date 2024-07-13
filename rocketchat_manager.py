@@ -23,8 +23,7 @@ class RocketchatManager:
     def ROCKET_USER_ID(self):
         return self._ROCKET_USER_ID
 
-    @ROCKET_USER_ID.setter
-    def ROCKET_USER_ID(self, value):
+    def set_ROCKET_USER_ID(self, value):
         self._ROCKET_USER_ID = value
         self._update_headers()
 
@@ -32,8 +31,7 @@ class RocketchatManager:
     def ROCKET_TOKEN(self):
         return self._ROCKET_TOKEN
 
-    @ROCKET_TOKEN.setter
-    def ROCKET_TOKEN(self, value):
+    def set_ROCKET_TOKEN(self, value):
         self._ROCKET_TOKEN = value
         self._update_headers()
 
@@ -41,8 +39,7 @@ class RocketchatManager:
     def SERVER_ADDRESS(self):
         return self._SERVER_ADDRESS
 
-    @SERVER_ADDRESS.setter
-    def SERVER_ADDRESS(self, value):
+    def set_SERVER_ADDRESS(self, value):
         self._SERVER_ADDRESS = value
 
     def _update_headers(self):
@@ -53,18 +50,6 @@ class RocketchatManager:
 
     def set_on_error_callback(self, callback):
         self._on_error_callback = callback
-
-
-    def parse_config(self, config):
-        self.ROCKET_USER_ID = config['ROCKET_USER_ID']
-        self.ROCKET_TOKEN = config['ROCKET_TOKEN']
-        self.SERVER_ADDRESS = config['SERVER_ADDRESS']
-        self.HEADERS = {
-            'X-Auth-Token': self.ROCKET_TOKEN,
-            'X-User-Id': self.ROCKET_USER_ID
-        }
- 
-
 
     def get_mock_subscriptions(self):
         with open('mock_sub.json', 'r') as file:
