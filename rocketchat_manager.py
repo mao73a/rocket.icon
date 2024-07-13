@@ -143,6 +143,13 @@ class RocketchatManager:
         self.unread_messages[channel_id].append({'historical': {"text": "", "qualifier":""}})
         print("   -- add_historical_message dodano ")
 
+    def remove_all_historical_messages(self, channel_id):
+        if channel_id in self.unread_messages:
+            self.unread_messages[channel_id] = [msg for msg in self.unread_messages[channel_id] if 'historical' not in msg]
+            if not self.unread_messages[channel_id]:
+                del self.unread_messages[channel_id]
+            print(f"   -- remove_all_historical_messages: removed for channel {channel_id}")
+
     #asyncio.run(monitor_subscriptions_websocket()
     async def monitor_subscriptions_websocket(self):
         self._stop_event = asyncio.Event()        
