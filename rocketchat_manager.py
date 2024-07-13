@@ -7,9 +7,9 @@ import json
 
 class RocketchatManager:
     def __init__(self, subscription_lock, pause_event):
-        self.ROCKET_USER_ID = ''
-        self.ROCKET_TOKEN = ''
-        self.SERVER_ADDRESS = ''
+        self._ROCKET_USER_ID = ''
+        self._ROCKET_TOKEN = ''
+        self._SERVER_ADDRESS = ''
         self.HEADERS = {}
         self._on_error_callback = None
         self._subscription_lock = subscription_lock
@@ -19,6 +19,37 @@ class RocketchatManager:
         self._rocketChat = None
         self._subscription_dict = {}
 
+    @property
+    def ROCKET_USER_ID(self):
+        return self._ROCKET_USER_ID
+
+    @ROCKET_USER_ID.setter
+    def ROCKET_USER_ID(self, value):
+        self._ROCKET_USER_ID = value
+        self._update_headers()
+
+    @property
+    def ROCKET_TOKEN(self):
+        return self._ROCKET_TOKEN
+
+    @ROCKET_TOKEN.setter
+    def ROCKET_TOKEN(self, value):
+        self._ROCKET_TOKEN = value
+        self._update_headers()
+
+    @property
+    def SERVER_ADDRESS(self):
+        return self._SERVER_ADDRESS
+
+    @SERVER_ADDRESS.setter
+    def SERVER_ADDRESS(self, value):
+        self._SERVER_ADDRESS = value
+
+    def _update_headers(self):
+        self.HEADERS = {
+            'X-Auth-Token': self._ROCKET_TOKEN,
+            'X-User-Id': self._ROCKET_USER_ID
+        }
 
     def set_on_error_callback(self, callback):
         self._on_error_callback = callback
