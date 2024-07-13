@@ -271,7 +271,8 @@ class RocketchatManager:
         self._rc_manager_thread.start()
 
     def mark_read(self):
-        mark_messages_as_read
+        for room_id in self.unread_messages.keys():
+            self.mark_messages_as_read(room_id)
 
 
 
