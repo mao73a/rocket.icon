@@ -20,7 +20,7 @@ pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()  # Event to control pausing
 subscription_lock = threading.Lock()
-rc_manager = RocketchatManager( subscription_lock, pause_event)
+rc_manager = RocketchatManager( subscription_lock)
 
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
@@ -167,6 +167,12 @@ def on_clicked_subscriptions(icon, item):
         file.write(json_data)
     os.startfile(file_path)
 
+def on_mark_read():
+    pause_event.clear() 
+    rules_manager.reset()    
+    rc_manager.restart()
+    rc_manager.mark_read()
+    pause_event.set()
 
 def setup(icon):
     icon.visible = True
@@ -175,6 +181,7 @@ def setup(icon):
         pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
         pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
         pystray.MenuItem("Resume", on_clicked_resume),
+        pystray.MenuItem("Mark all read", on_mark_read),        
         pystray.MenuItem("_______________________", on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
         pystray.MenuItem("Settings", on_clicked_settings),
@@ -197,6 +204,16 @@ def my_on_file_changed(filename):
     else:
         icon_manager.notify(f"Rules reloaded", "Rules")  
 
+def my_on_reload():
+    icon_manager.set_reload_image()
+
+def my_on_unread_message2(matching_rule, subscription):
+    fname = subscription.get('fname')
+    unread = subscription.get('unread')    
+    rules_manager.set_unread_counts(fname, unread) 
+    icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"))
+ 
+
 def my_on_unread_message(matching_rule, subscription, is_new_message):
     fname = subscription.get('fname')
     rid = subscription.get('rid')    
@@ -204,9 +221,7 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
     if is_new_message:
         icon_manager.play_sound(matching_rule.get("sound", rules_manager.DEFAULTS.get("sound")))
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
-            icon_manager.notify(f"{rc_manager.get_last_message_text(rid)}", fname)        
-
-
+            icon_manager.notify(f"{rc_manager.get_last_message_text(rid)}", fname)      
 
 if __name__ == "__main__":
     icon_manager.set_icon_title(TITLE)
@@ -218,6 +233,7 @@ if __name__ == "__main__":
     threading.Thread(target=monitor_all_subscriptions).start()
     rc_manager.set_on_error_callback(my_on_error)
     rc_manager.set_on_unread_message(my_on_unread_message)
+    rc_manager.set_on_reload(my_on_reload)
     rc_manager.start() # start a new thread
 
     time.sleep(1)

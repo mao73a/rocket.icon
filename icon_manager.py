@@ -10,10 +10,14 @@ class IconManager:
         self.set_basic_image() 
 
     def set_basic_image(self):
+        print(f"  set_basic_image")        
         self.icon.icon = Image.open("icons/bubble2.png")
 
     def set_error_image(self):
         self.icon.icon = Image.open("icons/bubble2error.png")
+    
+    def set_reload_image(self):
+        self.icon.icon = Image.open("icons/bubble2reload.png")
 
     def reset_priority(self):
         self._current_priority = float('inf') 

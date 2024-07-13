@@ -14,17 +14,19 @@ class RulesManager:
         self.DEFAULTS = {}
         self.RULES = {}
         self._last_fullfillment_time = {}
+        self.unread_counts = {}        
         self._escalation_times = {}        
         self.config_mtime = os.path.getmtime(self.config_path)
         self.rules_mtime = os.path.getmtime(self.rules_path)
         self._on_escalation_callback = None
         self._on_file_changed = None
         self._on_unread_message = None
-        self.unread_counts = {}
         self.load_config()
         self.load_rules()
  
-
+    def reset(self):
+        self._last_fullfillment_time = {}
+        self.unread_counts = {}    
 
     def load_json_with_comments(self, file_path):
         with open(file_path, 'r') as file:
@@ -109,15 +111,16 @@ class RulesManager:
         return None
 
     def has_videoconf_qualifier(self, unread_messages, value):
-        for message in unread_messages:
-            for msg_id, msg_content in message.items():
-                if value == "True" and msg_content.get("qualifier") == "videoconf":
-                    return True
-                elif value == "False" and not msg_content.get("qualifier") == "videoconf":
-                    return True
+        if unread_messages:
+            for message in unread_messages:
+                for msg_id, msg_content in message.items():
+                    if value == "True" and msg_content.get("qualifier") == "videoconf":
+                        return True
+                    elif value == "False" and not msg_content.get("qualifier") == "videoconf":
+                        return True
         return False
     
-    def all_rules_fulfilled(self, channel_name, channel_type, output_rule, userMentions, unread_messages):
+    def all_rules_fulfilled(self, channel_name, channel_type, output_rule, userMentions, unread_messages, is_historical):
             matching_rule = self.find_matching_rule(channel_name, channel_type, unread_messages)
             if not matching_rule:
                 print("No matching rule found")
@@ -126,7 +129,8 @@ class RulesManager:
             output_rule.update(matching_rule)
             if matching_rule.get('ignore', "False") == "True":
                 return False
-
+            if is_historical:
+                return True #no delay
             delay = int(matching_rule.get('delay', self.DEFAULTS.get('delay', "10")))
             now = datetime.now()
             if channel_name in self._last_fullfillment_time or userMentions > 0:
@@ -151,7 +155,6 @@ class RulesManager:
                 if channel in self._escalation_times:
                     elapsed_time = (now - self._escalation_times[channel]).total_seconds()
                     if elapsed_time >= escalation_time:
-                       
                         self._on_escalation_callback(channel)
                         self._escalation_times[channel] = now
                 else:
@@ -164,6 +167,19 @@ class RulesManager:
     def set_on_unread_message(self, callback):
         self._on_unread_message = callback
 
+    def set_unread_counts(self, fname, unread):
+        self.unread_counts[fname] = unread
+
+    def is_last_message_historical(self, unread_messages,  rid):
+        if rid not in unread_messages or not unread_messages[rid]:
+            return None
+        last_message = unread_messages[rid][-1]
+        try:
+            last_message_key = list(last_message.keys())[0]
+        except:
+            return False
+        return last_message_key=="historical"
+    
     def process_subscription(self, subscription, unread_messages):
         open = subscription.get('open')
         if open == True:
@@ -172,13 +188,15 @@ class RulesManager:
             chtype = subscription.get('t')
             rid = subscription.get('rid')
             userMentions = subscription.get('userMentions', 0)
-
+            print( f"process_subscription {fname} unread={unread}")
             if unread > 0:
                 matching_rule = {}
-                is_new_message = self.unread_counts.get(fname, 0) < unread
+                is_historical = self.is_last_message_historical(unread_messages, rid)
+                is_new_message = (not is_historical) and self.unread_counts.get(fname, 0) < unread
                 print(f" is_new_message={is_new_message} ucount={self.unread_counts.get(fname, 0)} unread={unread}")
-                if is_new_message and self.all_rules_fulfilled(fname, chtype, matching_rule, userMentions, unread_messages[rid]):
-                    print(f"New message in '{fname}' Rule: {matching_rule.get('name', 'Default')}")
+                if  (is_historical or is_new_message) and self.all_rules_fulfilled(fname, chtype, matching_rule, 
+                                                                userMentions, unread_messages.get(rid), is_historical):
+                    print(f"New message in '{fname}' Rule: {matching_rule.get('name', 'Default')} Historical={is_historical}")
                     
                     if self._on_unread_message:
                         self._on_unread_message(matching_rule, subscription, is_new_message)
