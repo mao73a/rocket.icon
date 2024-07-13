@@ -180,6 +180,9 @@ class RocketchatManager:
                     await asyncio.sleep(10)
                     print('Reconnecting...')
 
+    async def unsubscribe_all(self):
+        for sub in self._subscription_dict:
+            await self._rocketChat.unsubscribe(sub)
 
     def monitor_asyncio_subscriptions_websocket(self):
         asyncio_loop = asyncio.new_event_loop()
