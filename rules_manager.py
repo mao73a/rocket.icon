@@ -2,7 +2,7 @@ import os
 import json
 import time
 from datetime import datetime, timedelta
-import shutil
+
 import threading
 
 class RulesManager:
@@ -19,20 +19,12 @@ class RulesManager:
         self.rules_mtime = os.path.getmtime(self.rules_path)
         self._on_escalation_callback = None
         self._on_file_changed = None
+        self._on_unread_message = None
         self.unread_counts = {}
         self.load_config()
         self.load_rules()
  
-           
 
-    # Check if .rocketIcon directory exists, if not, create it and copy files
-    def ensure_local_files(self):
-        if not os.path.exists(self.local_user_dir+'/config.json'):
-            try:
-                os.makedirs(self.local_user_dir)
-            finally:            
-                shutil.copy('config.json', os.path.join(self.local_user_dir, 'config.json'))
-                shutil.copy('rules.json', os.path.join(self.local_user_dir, 'rules.json'))
 
     def load_json_with_comments(self, file_path):
         with open(file_path, 'r') as file:

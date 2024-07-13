@@ -18,6 +18,7 @@ class RocketchatManager:
         self.unread_messages = {}
         self._rocketChat = None
         self._subscription_dict = {}
+        self._on_unread_message = None        
 
     @property
     def ROCKET_USER_ID(self):
@@ -50,6 +51,9 @@ class RocketchatManager:
 
     def set_on_error_callback(self, callback):
         self._on_error_callback = callback
+
+    def set_on_unread_message(self, callback):
+        self._on_unread_message = callback
 
     def get_mock_subscriptions(self):
         with open('mock_sub.json', 'r') as file:
@@ -110,9 +114,9 @@ class RocketchatManager:
 
     def remove_message(self, channel_id, msg_id):
         return
-        for msg_dict in g_unread_messages[channel_id]:
+        for msg_dict in self.unread_messages[channel_id]:
             if msg_id in msg_dict:
-                g_unread_messages[channel_id].remove(msg_dict)
+                self.unread_messages[channel_id].remove(msg_dict)
                 break
 
     def handle_message(self, channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
@@ -163,12 +167,15 @@ class RocketchatManager:
                             chtype = sub.get('t')
                             channel_id = sub.get('rid')
                             open = sub.get('open')
+                            unread = sub.get('unread')                            
                             if open==True:
                                 matching_rule = rules_manager.find_matching_rule(fname, chtype, [])
                                 if matching_rule and matching_rule.get('ignore', "False") == "False":
                                     self._subscription_dict[channel_id]=sub
                                     await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
                                     print(f'subscribed to  {fname}  {channel_id}')
+                                    if self._on_unread_message and unread>0:
+                                        self._on_unread_message(matching_rule, sub, False)
                     # 2. ...and then simply wait for the registered events.
                     await self._rocketChat.run_forever()
                 else:

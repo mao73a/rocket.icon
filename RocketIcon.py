@@ -2,7 +2,7 @@ import pystray
 from PIL import Image
 from pystray import MenuItem as item
 import time
-
+import shutil
 import json
 import threading
 import os
@@ -14,14 +14,27 @@ from rules_manager import rules_manager
 
 TITLE = "Better Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
-
-rules_manager.ensure_local_files()
+         
+       
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()  # Event to control pausing
 subscription_lock = threading.Lock()
 rc_manager = RocketchatManager( subscription_lock, pause_event)
 
+
+# Check if .rocketIcon directory exists, if not, create it and copy files
+def ensure_local_files():
+    local_user_dir = os.path.expanduser("~/.rocketIcon")
+    if not os.path.exists(os.path.join(local_user_dir, 'config.json')):
+        try:
+            os.makedirs(local_user_dir)
+        finally:            
+            shutil.copy('config.json', os.path.join(local_user_dir, 'config.json'))
+            shutil.copy('rules.json', os.path.join(local_user_dir, 'rules.json'))
+
+
+ensure_local_files()
 
 # Load configuration from config.json
 def load_config():
@@ -30,7 +43,9 @@ def load_config():
         config = rules_manager.load_config()
         ROCKET_PROGRAM = config['ROCKET_PROGRAM']
         with subscription_lock:
-            rc_manager.parse_config(config)
+            rc_manager.set_ROCKET_USER_ID(config['ROCKET_USER_ID'])
+            rc_manager.set_ROCKET_TOKEN(config['ROCKET_TOKEN'])
+            rc_manager.set_SERVER_ADDRESS(config['SERVER_ADDRESS'])
         icon_manager.notify("Config loaded", TITLE)     
         
     except Exception as e:
@@ -156,9 +171,9 @@ def on_clicked_subscriptions(icon, item):
 def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
-        pystray.MenuItem("Stop for 10 minutes", on_clicked_stop_10),
-        pystray.MenuItem("Stop for 30 minutes", on_clicked_stop_30),
-        pystray.MenuItem("Stop for 60 minutes", on_clicked_stop_60),
+        pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
+        pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
+        pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
         pystray.MenuItem("Resume", on_clicked_resume),
         pystray.MenuItem("_______________________", on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
@@ -202,6 +217,7 @@ if __name__ == "__main__":
     pause_event.set()  # Ensure the pause event is initially set to allow monitoring
     threading.Thread(target=monitor_all_subscriptions).start()
     rc_manager.set_on_error_callback(my_on_error)
+    rc_manager.set_on_unread_message(my_on_unread_message)
     rc_manager.start() # start a new thread
 
     time.sleep(1)

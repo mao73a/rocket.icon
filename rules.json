@@ -2,43 +2,46 @@
     "defaults":  
     {   "delay": "10",
         "icon": "bubble2y.png",
-        "sound": "rocketicon_v3.wav",
-        "escalation": 300,
-        "preview":"False",
-		"priority": 10
+        "sound": "chime.wav",
+        "escalation": 1800,
+        "preview":"False"
     },
     "rules": [
         {
+            "name": "type:*",
+            "is_videoconf": "Yes",
+             "delay": "0",
+             "icon": "bubble2y.png",
+             "sound": "outbound-call-ringing.wav",
+             "active": "True",
+             "preview":"True"
+         },        
+        {
             "name": "CAM_WEB_DEV_FRONT",
             "ignore" : "True",
-            "delay": "10",
+            "delay": "60",
             "icon": "bubble2p.png",
-            "sound": "rocketicon_v3.wav",
+            "sound": "rocketicon_v1.wav",
             "active": "True"
         },    
         {
             "name": "type:p",
             "delay": "30",
-            "icon": "bubble2b.png",
+            "icon": "bubble2y.png",
             "sound": "rocketicon_v1.wav",
             "active": "True"
         },
         {
-           "name": "type:d",
-            "delay": "10",
+            "name": "type:d",
+            "delay": "0",
             "icon": "bubble2r.png",
-            "sound": "rocketicon_v2.wav",
             "active": "True"
         },
         {
-           "name": "type:*",
+            "name": "type:*",
             "delay": "10",
-            "icon": "bubble2l.png",
-            "sound": "rocketicon_v2.wav",
-            "active": "True",
-			"preview":"True",
-			"priority": 1
-			"
+            "icon": "bubble2b.png",
+            "active": "True"
         }        
     ]
 }
@@ -52,6 +55,10 @@
 ;  "name": "type:p" - all Public channels
 ;  "name": "type:d" - all Direct channels - channels with singel users or named users groups
 ;  "name": "XYZ"    - channel named exactly: "XYZ"
+;"is_videoconf" : 
+;   "No" - applies to text messages
+;   "Yes" - applies to videocong messages
+;    missing - applies to all messages
 ;"ignore" : "True|False" - ignore this channel; no notifications will be shown
 ;"delay": "10" - notification delay time in seconds 
 ;"icon": "bubble2.png|bubble2b.png|bubble2g.png|bubble2l.png|bubble2o.png|bubble2p.png|bubble2r.png|bubble2y.png", - notifications icon for matched rule
