@@ -7,3 +7,4 @@ config.json
 *.spec
 subscriptions.txt
 .aider*
+test*.py

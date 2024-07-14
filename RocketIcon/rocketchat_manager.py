@@ -212,7 +212,13 @@ class RocketchatManager:
                                     if self._on_unread_message and unread>0:
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
                                           self.add_historical_message(channel_id)  
-                    await self._rocketChat.run_forever()
+                    # await self._rocketChat.run_forever()
+                    task = asyncio.create_task(self._rocketChat.run_forever())
+                    while not self._stop_event.is_set():
+                        await asyncio.sleep(1)
+                        if self._stop_event.is_set():
+                            task.cancel()
+                            break
                 else:
                     self.do_error("No subscirptions found")
                     await asyncio.sleep(10)
@@ -236,23 +242,31 @@ class RocketchatManager:
             print(f"Exception: {e}")
         finally:
             print("Asyncio cleanup begin...")
-            if self._rocketChat:
-                self._rocketChat.cleanup_pending_task(asyncio_loop)
+            self.cleanup_pending_task(asyncio_loop)
             print("Asyncio cleanup end.")    
+
+
+    def cleanup_pending_task(self, asyncio_loop):
+         # Cancel all pending tasks
+        pending = asyncio.all_tasks(asyncio_loop)
+        for task in pending:
+            task.cancel()
+        # Run event loop until all tasks are cancelled
+        asyncio_loop.run_until_complete(
+            asyncio.gather(*pending, return_exceptions=True)
+        )
+        # Shutdown async generators
+        asyncio_loop.run_until_complete(asyncio_loop.shutdown_asyncgens())
+        asyncio_loop.close()
 
     def stop(self):
         self._stop_event.set()
-        if self._rocketChat:
-            self._rocketChat.stop()
 
     def restart(self):
         print("===== rocket_manager Restart =====")        
         if self._rc_manager_thread.is_alive():
-
             print(" Asyncio restart begin...")
             self._stop_event.set()
-            if self._rocketChat:
-                self._rocketChat.stop()
             time.sleep(1)
             if self._set_on_reload:
                 self._set_on_reload()
