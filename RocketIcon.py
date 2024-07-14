@@ -7,10 +7,7 @@ import json
 import threading
 import os
 from datetime import datetime, timedelta
-from  rocketchat_manager import RocketchatManager
- 
-from icon_manager import icon_manager
-from rules_manager import rules_manager
+from  RocketIcon import RocketchatManager, icon_manager, rules_manager
 
 TITLE = "Better Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
