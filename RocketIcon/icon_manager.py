@@ -12,13 +12,16 @@ class IconManager:
         self.set_basic_image() 
 
     def set_basic_image(self):
-        #print(f"  set_basic_image")        
+        #print(f"  set_basic_image")
+        self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2.png")
 
     def set_error_image(self):
+        self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2error.png")
     
     def set_reload_image(self):
+        self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2reload.png")
 
     def reset_priority(self):
@@ -33,12 +36,15 @@ class IconManager:
             if blink:
                 self._start_blinking(icon_name)
             else:
+                self._stop_blinking()
                 self.icon.icon = Image.open(f"icons/{icon_name}")
 
     def set_delay_image(self):
+        self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2delay.png")
 
     def set_launch_image(self):
+        self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2launch.png")        
 
     def set_icon_title(self, title):
