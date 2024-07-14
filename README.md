@@ -7,6 +7,7 @@ This software is created to address some of these issues. Rocket.Icon creates an
 - Customized delay periods for notifications. For example, you can define a lower notification frequency for some public broadcast channels.
 - The ability to mute notifications for a specified amount of time, allowing you to focus on important work.
 - The ability to inform you about overlooked messages after a specified amount of time (escalation).
+- Tray icon can blink
 
 ![image](https://github.com/user-attachments/assets/9b790f26-8f4e-4ce3-8402-8686326036ea)
 # Installation

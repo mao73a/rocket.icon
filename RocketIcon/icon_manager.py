@@ -11,6 +11,9 @@ class IconManager:
         self._current_priority = float('inf') 
         self.set_basic_image() 
 
+    def stop(self):
+        self._stop_blinking()    
+
     def set_basic_image(self):
         #print(f"  set_basic_image")
         self._stop_blinking()
@@ -27,13 +30,13 @@ class IconManager:
     def reset_priority(self):
         self._current_priority = float('inf') 
 
-    def set_notification_image(self, icon_name, prior=0, blink=False):
+    def set_notification_image(self, icon_name, prior=0, blink='False'):
         if not icon_name:
             return
         if self._current_priority > prior:
             self._current_priority = prior
             print(f"  set_notification_image {icon_name}")
-            if blink:
+            if blink=="True":
                 self._start_blinking(icon_name)
             else:
                 self._stop_blinking()
@@ -44,7 +47,7 @@ class IconManager:
         self.icon.icon = Image.open("icons/bubble2delay.png")
 
     def set_launch_image(self):
-        self._stop_blinking()
+        #self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2launch.png")        
 
     def set_icon_title(self, title):

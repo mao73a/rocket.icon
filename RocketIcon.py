@@ -100,7 +100,8 @@ def monitor_all_subscriptions():
 
 def on_clicked_quit(icon, item):
     if item.text == "Quit":
-        print("Quit.")        
+        print("Quit.")   
+        icon_manager.stop()     
         rc_manager.stop()
         stop_event.set()
         pause_event.set()  # Resume if paused to ensure clean exit
@@ -208,7 +209,8 @@ def my_on_reload():
 def my_on_unread_message(matching_rule, subscription, is_new_message):
     fname = subscription.get('fname')
     rid = subscription.get('rid')    
-    icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"))
+    icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"),
+                                            matching_rule.get("blink", rules_manager.DEFAULTS.get("blink", False)))
     if is_new_message:
         icon_manager.play_sound(matching_rule.get("sound", rules_manager.DEFAULTS.get("sound")))
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":

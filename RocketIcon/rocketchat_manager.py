@@ -78,7 +78,7 @@ class RocketchatManager:
             return False
                 
     def get_subscription_for_channel(self,channel_id):
-        #return self.get_mock_subscriptions()
+        return self.get_mock_subscriptions()
         try:
             response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/subscriptions.getOne?roomId={channel_id}', headers=self.HEADERS)
             if response.status_code == 200:
@@ -131,11 +131,12 @@ class RocketchatManager:
     def handle_channel_changes(self, channel_id, channel_type):
         print("===== handle_channel_changes =====")
         print(f"  channel_id={channel_id} channel_type={channel_type}")        
-        self.restart()
+        #self.restart()
 
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
 
     def remove_message(self, channel_id, msg_id):
+        return
         for msg_dict in self.unread_messages[channel_id]:
             if msg_id in msg_dict:
                 self.unread_messages[channel_id].remove(msg_dict)
