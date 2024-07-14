@@ -1,1 +1,1 @@
-pyinstaller --hide-console hide-early -F rocketicon.py
+pyinstaller --hide-console hide-early -F --icon="favicon.ico"  rocketicon.py

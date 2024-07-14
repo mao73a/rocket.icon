@@ -1,26 +1,35 @@
 # Rocket Icon
-- I use Rocket.Chat app at work and sometimes I find it very disturbing when too many people wants to say too many things too often. I think the original Rocket.Chat application lacks possibility to delay some notifications and to let user distinguish between less and more important messages.
-- This software is created to address some of these issues. Te Rocket.Icon creates an alternarive Windows tray icon. It enables you to have:
-	- different icons and sounds notifications for differnt channels
-	- customized delay periods for notifications - you can for example define notification frequency to be lower for some public boradcast channel
-	- ability to mute notifications for specified amount of time, if you need to focus on some important work
-	- ability to inform about unread messages after some specified amount of time (escalation)
-	
+
+I use the Rocket.Chat app at work, and sometimes I find it very overwhelming when too many people send too many messages too often. I think the original Rocket.Chat application lacks the ability to filter and delay some notifications and to let users distinguish between less and more important messages.
+
+This software is created to address some of these issues. Rocket.Icon creates an alternative Windows tray icon. It enables you to have:
+- Different icons and sound notifications for different channels.
+- Customized delay periods for notifications. For example, you can define a lower notification frequency for some public broadcast channels.
+- The ability to mute notifications for a specified amount of time, allowing you to focus on important work.
+- The ability to inform you about overlooked messages after a specified amount of time (escalation).
+
 # Installation
+
+```sh
 pip install -r requirements.txt
 python RocketIcon.py
+```
+
 or
-use precomplied rocketicon.exe if you don't want to install python
+
+Use the precompiled `rocketicon.exe` if you don't want to install Python.
 
 # Setup
-After first run, two default files:
-	- rules.json
-	- config.json 
-will be copied from program directory to your .rocketicon local user directory. Do not attempt to edit json files in program direcory as it will have no effect! Click on the tray icon Settings or Rules menu instead. After clickng Settings menu you can edit:
-	- your user id and user token. IMPORTANT: These are not the same as user name and user password! - go to your user account to generate user id and user token
-	- enter your RocketChat server address
+
+After the first run, two default files:
+- `rules.json`
+- `config.json`
+
+will be copied from the program directory to your `.rocketicon` local user directory. Do not attempt to edit the JSON files in the program directory as it will have no effect! Click on the tray icon's Settings or Rules menu instead. After clicking the Settings menu, you can edit:
+- Your Rocket.Chat server address.
+- Your user ID and user token. **IMPORTANT**: These are not the same as your username and password! Go to your user account to generate your user ID and user token.
+
 
 # Rules
-Click on tray meny Rules and see precofigured rules. You can add your own rules to customize notifications behaviour. See documentation inside rules.json to find out more about defining rules.
 
-
+Click on the tray menu Rules and see the preconfigured rules. You can add your own rules to customize the notification behavior. See the documentation inside `rules.json` to learn more about defining rules.
