@@ -1,7 +1,7 @@
 {
     "defaults":  
     {   "delay": "10",
-        "icon": "bubble2y.png",
+        "icon": "yellow.png",
         "sound": "chime.wav",
         "escalation": 1800,
         "preview":"False"
@@ -11,57 +11,91 @@
             "name": "type:*",
             "is_videoconf": "Yes",
              "delay": "0",
-             "icon": "bubble2y.png",
+             "icon": "purple.png",
              "sound": "outbound-call-ringing.wav",
              "active": "True",
              "preview":"True"
          },        
         {
-            "name": "CAM_WEB_DEV_FRONT",
-            "ignore" : "True",
-            "delay": "60",
-            "icon": "bubble2p.png",
+            "name": "some-boring-channel-name-with-lots-of-disrupting-messages",
+            "ignore" : "False",
+            "delay": "180",
+            "icon": "blue.png",
             "sound": "rocketicon_v1.wav",
             "active": "True"
         },    
         {
             "name": "type:p",
             "delay": "30",
-            "icon": "bubble2y.png",
+            "icon": "yellow.png",
             "sound": "rocketicon_v1.wav",
             "active": "True"
         },
         {
             "name": "type:d",
-            "delay": "0",
-            "icon": "bubble2r.png",
+            "icon": "red.png",
             "active": "True"
         },
         {
             "name": "type:*",
-            "delay": "10",
-            "icon": "bubble2b.png",
             "active": "True"
         }        
     ]
 }
+
+
 ;How to use this file:
 ;
 ;Rules are matched in order of appearence. Processing stops after finding a first matching rule.
-;"defaults" sections - defines default values for icon, sound and delay to be used if matched rule lacks any of these properties
-;"rules"  section - set of rules to apply when receiveing a new message. Below are rule properties you can edit:
+;If two different rules for two different channels are matched, icon from the higher rule (lower line number) is displayed.
+;
+;"defaults" section - defines default values for icon, sound, delay, preview and ignore to be used,
+;                       if matched rule lacks any of these properties
+;
+;
+;"rules"  section - set of rules to apply when receiveing a new message. 
+; 
+;Below are rule properties you can edit inside both sections:
 ;"name": channel name or channel type. Aviable entries:
-;  "name": "type:*" - all channels
-;  "name": "type:p" - all Public channels
-;  "name": "type:d" - all Direct channels - channels with singel users or named users groups
-;  "name": "XYZ"    - channel named exactly: "XYZ"
+;      "name": "type:*" - all channels
+;      "name": "type:p" - all Public channels
+;      "name": "type:d" - all Direct channels - channels of single users or named users groups
+;      "name": "XYZ"    - channel named exactly: "XYZ"
 ;"is_videoconf" : 
-;   "No" - applies to text messages
-;   "Yes" - applies to videocong messages
-;    missing - applies to all messages
-;"ignore" : "True|False" - ignore this channel; no notifications will be shown
-;"delay": "10" - notification delay time in seconds 
-;"icon": "bubble2.png|bubble2b.png|bubble2g.png|bubble2l.png|bubble2o.png|bubble2p.png|bubble2r.png|bubble2y.png", - notifications icon for matched rule
-;"sound": "rocketicon_v1.wav|rocketicon_v2.wav|rocketicon_v3.wav", - notification sound
+;   "No"  - rule applies to text messages only
+;   "Yes" - rule applies to videocong messages only
+;    missing - applies to all kinds of messages
+;"ignore"  : "True|False" - tells if the channel should be ignored - no notification at all
+;"preview" : "True|False" - tells if the app should display message text preview when new message arrives 
+;"delay": "30" - notification delay time in seconds - You will be notified 30 seconds after first message arrives;
+;                The next notification will be made not earlier then 30 seconds after the previous one.                    
+;"icon": "red.png", - notifications icon for matched rule; You can use any file from icons direcory ex:
+;   - blue.png
+;   - green.png
+;   - lemon.png
+;   - orange.png
+;   - purple.png
+;   - red.png
+;   - yellow.png
 ;"escalation": time in seconds, to display windows notifications about unread messages
-;"active": "True|False" - tells if the current rule is Active or not; allows to temporarily disable rule without deleting it 
+;"active": "True|False" - tells if the current rule is active; allows to temporarily disable rule without deleting it 
+;"sound": "chime.wav"- notification sound; you can use any wav file from sounds directory or add your own
+;   - beep.wav
+;   - call-ended.wav
+;   - chelle.wav
+;   - chime.wav
+;   - dialtone.wav
+;   - ding.wav
+;   - door.wav
+;   - droplet.wav
+;   - highbell.wav
+;   - outbound-call-ringing.wav
+;   - ringtone.wav
+;   - rocketicon_v1.wav
+;   - rocketicon_v2.wav
+;   - rocketicon_v3.wav
+;   - seasons.wav
+;   - telephone.wav
+;
+; If you have any errors telling about incorrect JSON, please go to some online JSON validator (ex https://jsonlint.com/)
+; and paste your rules.json file contents without any commented lines (all lines starting with ";").

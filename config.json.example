@@ -1,6 +1,6 @@
 {
     "ROCKET_USER_ID": "my-user-id",
     "ROCKET_TOKEN":  "my-token",
-    "SERVER_ADDRESS": "https://chat.czk.badboy.com",
+    "SERVER_ADDRESS": "https://chat.badboy.com",
     "ROCKET_PROGRAM": "C:/Users/MY-USER-NAME/AppData/Local/Programs/Rocket.Chat/Rocket.Chat.exe"
 } 

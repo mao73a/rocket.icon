@@ -211,4 +211,4 @@ class RulesManager:
                     if unread_messages.get(rid):
                         del unread_messages[rid]                                
 
-rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))
+#rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))

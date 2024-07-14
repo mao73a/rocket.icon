@@ -10,7 +10,7 @@ class IconManager:
         self.set_basic_image() 
 
     def set_basic_image(self):
-        print(f"  set_basic_image")        
+        #print(f"  set_basic_image")        
         self.icon.icon = Image.open("icons/bubble2.png")
 
     def set_error_image(self):
@@ -49,4 +49,4 @@ class IconManager:
         print(f"  play_sound {sound_name}")
         winsound.PlaySound(f"sounds/{sound_name}", winsound.SND_FILENAME | winsound.SND_ASYNC)
 
-icon_manager = IconManager("Better Rocket Icon")
+#icon_manager = IconManager("Better Rocket Icon")

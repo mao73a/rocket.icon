@@ -1,10 +1,12 @@
+from .icon_manager import IconManager
+from .rocketchat_manager import RocketchatManager
+from .rules_manager import RulesManager
+
+icon_manager = IconManager("Rocket Icon")
+
 __all__ = [
     'icon_manager',
     'RocketchatManager',
-    'rules_manager'
+    'RulesManager'
 ]
-
-from .icon_manager import icon_manager
-from .rocketchat_manager import RocketchatManager
-from .rules_manager    import rules_manager
   

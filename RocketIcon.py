@@ -1,5 +1,4 @@
 import pystray
-from PIL import Image
 from pystray import MenuItem as item
 import time
 import shutil
@@ -10,28 +9,27 @@ from datetime import datetime, timedelta
 from RocketIcon import RocketchatManager, icon_manager, RulesManager
 import os
 
-rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))
-
-TITLE = "Better Rocket Icon"
+TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
-         
        
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
-pause_event = threading.Event()  # Event to control pausing
+pause_event = threading.Event()
 subscription_lock = threading.Lock()
+config_path = os.path.expanduser("~/.rocketIcon")
+rules_manager = RulesManager(config_path)
 rc_manager = RocketchatManager(subscription_lock, rules_manager)
 
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
 def ensure_local_files():
-    local_user_dir = os.path.expanduser("~/.rocketIcon")
-    if not os.path.exists(os.path.join(local_user_dir, 'config.json')):
+    global config_path
+    if not os.path.exists(os.path.join(config_path, 'config.json')):
         try:
-            os.makedirs(local_user_dir)
+            os.makedirs(config_path)
         finally:            
-            shutil.copy('config.json', os.path.join(local_user_dir, 'config.json'))
-            shutil.copy('rules.json', os.path.join(local_user_dir, 'rules.json'))
+            shutil.copy('config.json', os.path.join(config_path, 'config.json'))
+            shutil.copy('rules.json', os.path.join(config_path, 'rules.json'))
 
 
 ensure_local_files()
@@ -162,7 +160,7 @@ def on_clicked_separator(icon, item):
 
 def on_clicked_subscriptions(icon, item):
     json_data = json.dumps(rc_manager.get_all_subscriptions(), indent=4, sort_keys=True)
-    file_path = "subscriptions.txt"
+    file_path = os.path.join(config_path, "subscriptions.txt") 
     with open(file_path, 'w') as file:
         file.write(json_data)
     os.startfile(file_path)
@@ -206,13 +204,6 @@ def my_on_file_changed(filename):
 
 def my_on_reload():
     icon_manager.set_reload_image()
-
-def my_on_unread_message2(matching_rule, subscription):
-    fname = subscription.get('fname')
-    unread = subscription.get('unread')    
-    rules_manager.set_unread_counts(fname, unread) 
-    icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"))
- 
 
 def my_on_unread_message(matching_rule, subscription, is_new_message):
     fname = subscription.get('fname')
