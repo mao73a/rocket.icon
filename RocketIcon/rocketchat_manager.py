@@ -1,6 +1,6 @@
 import asyncio
 import threading
-import rules_manager
+from . import rules_manager
 from rocketchat_async import RocketChat
 import requests
 import json
