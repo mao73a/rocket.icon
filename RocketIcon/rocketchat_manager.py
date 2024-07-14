@@ -7,13 +7,14 @@ import json
 import time
 
 class RocketchatManager:
-    def __init__(self, subscription_lock):
+    def __init__(self, subscription_lock, rules_manager):
         self._ROCKET_USER_ID = ''
         self._ROCKET_TOKEN = ''
         self._SERVER_ADDRESS = ''
         self.HEADERS = {}
         self._on_error_callback = None
         self._subscription_lock = subscription_lock
+        self._rules_manager = rules_manager
  
         self._stop_event = None
         self.unread_messages = {}

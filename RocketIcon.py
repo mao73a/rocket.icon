@@ -7,7 +7,10 @@ import json
 import threading
 import os
 from datetime import datetime, timedelta
-from  RocketIcon import RocketchatManager, icon_manager, rules_manager
+from RocketIcon import RocketchatManager, icon_manager, RulesManager
+import os
+
+rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))
 
 TITLE = "Better Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
@@ -17,7 +20,7 @@ pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()  # Event to control pausing
 subscription_lock = threading.Lock()
-rc_manager = RocketchatManager( subscription_lock)
+rc_manager = RocketchatManager(subscription_lock, rules_manager)
 
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
