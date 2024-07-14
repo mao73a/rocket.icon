@@ -56,12 +56,12 @@ def get_channels_for_messages(channels):
     return {"update":updates}
     
 def check_config_loaded():
-    if not rules_manager.rules_are_loaded():
+    if not rules_manager.rules_manager.rules_are_loaded():
         my_on_error("Error reading rules.json file. Please go to Rules and verify your JSON syntax, and try again.")
         stop_event.wait(10)
         return False 
 
-    if not rules_manager.config_is_loaded():
+    if not rules_manager.rules_manager.config_is_loaded():
         my_on_error("Error reading config.json file. Please go to Settings and verify your JSON syntax, and try again.")
         stop_event.wait(10)
         return False

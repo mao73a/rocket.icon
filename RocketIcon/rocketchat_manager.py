@@ -177,7 +177,7 @@ class RocketchatManager:
     async def monitor_subscriptions_websocket(self):
         self._stop_event = asyncio.Event()        
         while not self._stop_event.is_set():
-            if not rules_manager.rules_are_loaded() or not rules_manager.config_is_loaded():
+            if not rules_manager.rules_manager.rules_are_loaded() or not rules_manager.rules_manager.config_is_loaded():
                 self.do_error('')
                 await asyncio.sleep(10)
                 continue
