@@ -17,7 +17,8 @@ python RocketIcon.py
 
 or
 
-Use the precompiled `rocketicon.exe` if you don't want to install Python.
+download precompiled windows executable:
+[win-1.0.0](https://github.com/mao73a/rocket.icon/releases/download/win-1.0.0/rocketicon-win32-v1.0.0.zip)
 
 # Setup
 
