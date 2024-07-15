@@ -114,7 +114,12 @@ def on_clicked_show(icon, item):
         icon_manager.set_delay_image()
     else:
         icon_manager.set_launch_image()
-    os.startfile(ROCKET_PROGRAM)
+    launch_program = ROCKET_PROGRAM    
+    #https://chat.czk.comarch.com/direct/Yme82NmFkeZu5s9khYme82NmFkeZu5s9kh
+    #https://chat.czk.comarch.com/group/motest    
+    if "{ROOM}" in launch_program:
+        launch_program = launch_program.replace("{ROOM}", rules_manager.get_room_to_visit(), 1)
+    os.startfile(launch_program)
 
 def on_clicked_settings(icon, item):
     os.startfile(rules_manager.config_path)
@@ -180,7 +185,7 @@ def setup(icon):
         pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
         pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
         pystray.MenuItem("Resume", on_clicked_resume),
-        pystray.MenuItem("Mark all read", on_mark_read),        
+        pystray.MenuItem("Mark all as read", on_mark_read),        
         pystray.MenuItem("_______________________", on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
         pystray.MenuItem("Settings", on_clicked_settings),
@@ -210,7 +215,7 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
     fname = subscription.get('fname')
     rid = subscription.get('rid')    
     icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"),
-                                            matching_rule.get("blink", rules_manager.DEFAULTS.get("blink", False)))
+                                            matching_rule.get("blink_delay", rules_manager.DEFAULTS.get("blink_delay", 0)))
     if is_new_message:
         icon_manager.play_sound(matching_rule.get("sound", rules_manager.DEFAULTS.get("sound")))
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
@@ -225,7 +230,6 @@ if __name__ == "__main__":
     pause_event.set()  # Ensure the pause event is initially set to allow monitoring
     threading.Thread(target=monitor_all_subscriptions).start()
     rc_manager.set_on_error_callback(my_on_error)
-    rc_manager.set_on_unread_message(my_on_unread_message)
     rc_manager.set_on_reload(my_on_reload)
     rc_manager.start() # start a new thread
 

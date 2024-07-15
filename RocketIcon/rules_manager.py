@@ -23,12 +23,7 @@ class SubscriptionStack:
     def remove(self, rid):
         if rid in self.stack:
             del self.stack[rid]
-
-    def get_most_recent(self):
-        if self.stack:
-            return self.pop()
-        return None
-
+    
     def clear_all(self):
         self.stack.clear()
 
@@ -56,7 +51,8 @@ class RulesManager:
  
     def reset(self):
         self._last_fullfillment_time = {}
-        self.unread_counts = {}    
+        self.unread_counts = {}  
+        self.subscription_stack.clear_all()  
 
     def load_json_with_comments(self, file_path):
         with open(file_path, 'r') as file:
@@ -192,7 +188,8 @@ class RulesManager:
 
     def reset_messages_counters(self):
         print("reset_messages_counters")
-        self.unread_counts = {}      
+        self.unread_counts = {} 
+        self.subscription_stack.clear_all()      
  
     def set_on_unread_message(self, callback):
         self._on_unread_message = callback
@@ -242,5 +239,18 @@ class RulesManager:
                     if unread_messages.get(rid):
                         del unread_messages[rid]
                     self.subscription_stack.remove(rid)
+
+    def get_room_to_visit(self):
+        sub = self.subscription_stack.pop() 
+        #https://chat.address.com/direct/Yme82NmFkeZu5s9khYme82NmFkeZu5s9kh
+        #https://chat.address.com/group/group_fname  
+        if sub:  
+            if sub.get('t') == 'd':
+                return f"direct/{sub.get('rid')}"
+            else:
+                return f"group/{sub.get('fname')}"
+        return ""
+
+
 
 #rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))

@@ -4,7 +4,8 @@
         "icon": "yellow.png",
         "sound": "chime.wav",
         "escalation": 1800,
-        "preview":"False"
+        "preview":"False",
+        "blink_delay": 10
     },
     "rules": [
         {
@@ -77,7 +78,9 @@
 ;   - purple.png
 ;   - red.png
 ;   - yellow.png
-;"escalation": time in seconds, to display windows notifications about unread messages
+;"escalation" : time in seconds to display windows notifications about unread messages
+;"blink_delay": time in seconds to start bliknking tray icon since first showing the icon; 
+;                if no "blink_delay" is defined or "blink_delay" is equal to 0 - the icon will not blink
 ;"active": "True|False" - tells if the current rule is active; allows to temporarily disable rule without deleting it 
 ;"sound": "chime.wav"- notification sound; you can use any wav file from sounds directory or add your own
 ;   - beep.wav

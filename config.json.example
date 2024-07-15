@@ -1,6 +1,15 @@
 {
     "ROCKET_USER_ID": "my-user-id",
     "ROCKET_TOKEN":  "my-token",
-    "SERVER_ADDRESS": "https://chat.badboy.com",
+    "SERVER_ADDRESS": "https://chat.someaddress.com",
     "ROCKET_PROGRAM": "C:/Users/MY-USER-NAME/AppData/Local/Programs/Rocket.Chat/Rocket.Chat.exe"
+; OR  "ROCKET_PROGRAM": "https://chat.someaddress.com/{ROOM}"
 } 
+
+;ROCKET_USER_ID - your user id you can see during token generation process (this is not login!)
+;ROCKET_TOKEN - your token to access rocket.chat
+;SERVER_ADDRESS - your rocket chat server address
+;ROCKET_PROGRAM - this can be either path to your local Rocket.Chat executable or web address. If you pass your Rocket.Chat the web address,
+;                 your browser will be launched instead of the local Rochet.Chat client app
+;                 *IMPORTANT* - If you add "{ROOM}" tag at the end of the address (ex: "https://chat.someaddres.com/{ROOM}") - the app will 
+;         

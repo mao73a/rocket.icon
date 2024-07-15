@@ -30,14 +30,14 @@ class IconManager:
     def reset_priority(self):
         self._current_priority = float('inf') 
 
-    def set_notification_image(self, icon_name, prior=0, blink='False'):
+    def set_notification_image(self, icon_name, prior=0, blink_delay=0):
         if not icon_name:
             return
         if self._current_priority > prior:
             self._current_priority = prior
             print(f"  set_notification_image {icon_name}")
-            if blink=="True":
-                self._start_blinking(icon_name)
+            if blink_delay>0:
+                self._start_blinking(icon_name, blink_delay)
             else:
                 self._stop_blinking()
                 self.icon.icon = Image.open(f"icons/{icon_name}")
@@ -63,9 +63,9 @@ class IconManager:
         print(f"  play_sound {sound_name}")
         winsound.PlaySound(f"sounds/{sound_name}", winsound.SND_FILENAME | winsound.SND_ASYNC)
 
-    def _start_blinking(self, icon_name):
+    def _start_blinking(self, icon_name, blink_delay):
         self._stop_blinking()
-        self._blink_thread = threading.Thread(target=self._blink_icon, args=(icon_name,))
+        self._blink_thread = threading.Thread(target=self._blink_icon, args=(icon_name, blink_delay))
         self._blink_thread.start()
 
     def _stop_blinking(self):
@@ -73,14 +73,17 @@ class IconManager:
             self._blink_stop = True
             self._blink_thread.join()
 
-    def _blink_icon(self, icon_name):
+    def _blink_icon(self, icon_name, blink_delay):
         self._blink_stop = False
+        elapsed_time = 0
         while not self._blink_stop:
             self.icon.icon = Image.open(f"icons/{icon_name}")
             time.sleep(1)
+            elapsed_time+=1
             if self._blink_stop:
                 break
-            self.icon.icon = Image.open("icons/bubble2.png")
-            time.sleep(1)
+            if blink_delay<=elapsed_time:
+                self.icon.icon = Image.open("icons/bubble2.png")
+                time.sleep(1)
 
 #icon_manager = IconManager("Better Rocket Icon")

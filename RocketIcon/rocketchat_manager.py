@@ -19,7 +19,6 @@ class RocketchatManager:
         self.unread_messages = {}
         self._rocketChat = None
         self._subscription_dict = {}
-        self._on_unread_message = None     
         self._rc_manager_thread = None   
 
     @property
@@ -54,9 +53,6 @@ class RocketchatManager:
     def set_on_error_callback(self, callback):
         self._on_error_callback = callback
 
-    def set_on_unread_message(self, callback):
-        self._on_unread_message = callback
-
     def set_on_reload(self, callback):
         self._set_on_reload = callback        
 
@@ -78,7 +74,7 @@ class RocketchatManager:
             return False
                 
     def get_subscription_for_channel(self,channel_id):
-        return self.get_mock_subscriptions()
+        #return self.get_mock_subscriptions()
         try:
             response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/subscriptions.getOne?roomId={channel_id}', headers=self.HEADERS)
             if response.status_code == 200:
@@ -136,7 +132,6 @@ class RocketchatManager:
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
 
     def remove_message(self, channel_id, msg_id):
-        return
         for msg_dict in self.unread_messages[channel_id]:
             if msg_id in msg_dict:
                 self.unread_messages[channel_id].remove(msg_dict)
@@ -154,18 +149,18 @@ class RocketchatManager:
                     self.unread_messages[channel_id] = []
             if unread:
                 self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier":qualifier}})
-                print("   -- handle_message1 dodano ")
+                print("   -- handle_message1 added ")
             else:
                 self.remove_message(channel_id, msg_id)
                 if len(self.unread_messages[channel_id])==0:
                     del self.unread_messages[channel_id]
-                print("   -- handle_message1 usunieto ")
+                print("   -- handle_message1 removed ")
 
     def add_historical_message(self, channel_id):
         if not self.unread_messages.get(channel_id):                    
             self.unread_messages[channel_id] = []        
         self.unread_messages[channel_id].append({'historical': {"text": "", "qualifier":""}})
-        print("   -- add_historical_message dodano ")
+        print("   -- add_historical_message added ")
 
     def remove_all_historical_messages(self, channel_id):
         if channel_id in self.unread_messages:
@@ -210,7 +205,7 @@ class RocketchatManager:
                                     self._subscription_dict[channel_id]=sub
                                     await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
                                     print(f'subscribed to  {fname}  {channel_id}')
-                                    if self._on_unread_message and unread>0:
+                                    if unread>0:
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
                                           self.add_historical_message(channel_id)  
                     # await self._rocketChat.run_forever()
