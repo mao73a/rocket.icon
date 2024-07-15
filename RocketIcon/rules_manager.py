@@ -2,6 +2,35 @@ import os
 import json
 import time
 from datetime import datetime
+import threading
+from collections import OrderedDict
+
+class SubscriptionStack:
+    def __init__(self):
+        self.stack = OrderedDict()
+
+    def push(self, subscription):
+        rid = subscription.get('rid')
+        if rid in self.stack:
+            del self.stack[rid]
+        self.stack[rid] = subscription
+
+    def pop(self):
+        if self.stack:
+            return self.stack.popitem()[1]
+        return None
+
+    def remove(self, rid):
+        if rid in self.stack:
+            del self.stack[rid]
+
+    def get_most_recent(self):
+        if self.stack:
+            return self.pop()
+        return None
+
+    def clear_all(self):
+        self.stack.clear()
 
 import threading
 
@@ -21,6 +50,7 @@ class RulesManager:
         self._on_escalation_callback = None
         self._on_file_changed = None
         self._on_unread_message = None
+        self.subscription_stack = SubscriptionStack()
         self.load_config()
         self.load_rules()
  
@@ -202,6 +232,7 @@ class RulesManager:
                         self._on_unread_message(matching_rule, subscription, is_new_message)
                     self.unread_counts[fname] = unread
                     self.check_escalation(fname, matching_rule)
+                    self.subscription_stack.push(subscription)
             else:
                 if fname in self.unread_counts:
                     del self.unread_counts[fname]
@@ -209,6 +240,7 @@ class RulesManager:
                     del self._escalation_times[fname]
                 if self.unread_counts.get(fname, 0) == 0:
                     if unread_messages.get(rid):
-                        del unread_messages[rid]                                
+                        del unread_messages[rid]
+                    self.subscription_stack.remove(rid)
 
 #rules_manager = RulesManager(os.path.expanduser("~/.rocketIcon"))
