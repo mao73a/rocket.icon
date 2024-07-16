@@ -52,6 +52,26 @@
             color: #545454;
             font-size: 0.9rem;
         }
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            position: fixed;
+            top: calc(50% + 100px); /* Move 100px down from the center */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+        #progressPath {
+            transition: all 0.1s ease;
+        }
+        .progress-container svg {
+            opacity: 0.5;
+        }
+        .progress-container svg {
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
@@ -79,11 +99,24 @@
                 </li>
             </ul>
         </div>
+        <div class="container search-container">
+            <div id="progressContainer" class="progress-container" style="display: none;">
+                <svg width="300" height="300" viewBox="0 0 300 300">
+                    <circle cx="150" cy="150" r="135" fill="none" stroke="#e0e0e0" stroke-width="30"/>
+                    <path id="progressPath" fill="none" stroke="#4285f4" stroke-width="30" stroke-linecap="round"/>
+                    <text id="progressText" x="150" y="150" text-anchor="middle" dy=".3em" font-size="24">Found: 0</text>
+                </svg>
+            </div>
+            <div id="resultsContainer" class="results-container"></div>
+        </div>
         <div id="resultsContainer" class="results-container"></div>
     </div>
 
     <script>
         const ROCKET_CHAT_URL = '{{ROCKET_CHAT_URL}}';
+        let totalRooms = 0;
+        let processedRooms = 0;
+        let totalMessagesFound = 0;
         let currentTimeFilter = 'all';
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -110,7 +143,9 @@
             if (!searchText) return;
 
             const resultsContainer = document.getElementById('resultsContainer');
-            resultsContainer.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+            const progressContainer = document.getElementById('progressContainer');
+            resultsContainer.innerHTML = '';
+            progressContainer.style.display = 'flex';
 
             try {
                 const subscriptionsData = await getSubscriptions();
@@ -121,13 +156,21 @@
                 }
 
                 const subscriptions = subscriptionsData.subscriptions;
+                totalRooms = subscriptions.length;
+                processedRooms = 0;
+                totalMessagesFound = 0;
+                updateProgress(0);
+
                 const searchResults = await Promise.all(subscriptions.map(sub => searchRoom(sub.rid, searchText, sub.fname, sub.t)));
                 displayResults(filterResultsByTime(searchResults.flat()));
             } catch (error) {
                 console.error('Error:', error);
                 resultsContainer.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while searching: ${error.message}</div>`;
+            } finally {
+                progressContainer.style.display = 'none';
             }
         }
+
 
         function filterResultsByTime(results) {
             const now = new Date();
@@ -164,11 +207,59 @@
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-            return data.messages ? data.messages.map(msg => ({
+            processedRooms++;
+            const filteredMessages = filterMessagesByTime(data.messages || []);
+            totalMessagesFound += filteredMessages.length;
+            updateProgress((processedRooms / totalRooms) * 100);
+            return filteredMessages.map(msg => ({
                 ...msg,
                 roomName: roomName || 'Unknown Room',
                 roomType: roomType
-            })) : [];
+            }));
+        }
+
+        function filterMessagesByTime(messages) {
+            const now = new Date();
+            let cutoffDate;
+
+            switch (currentTimeFilter) {
+                case '1month':
+                    cutoffDate = new Date(now.setMonth(now.getMonth() - 1));
+                    break;
+                case '6months':
+                    cutoffDate = new Date(now.setMonth(now.getMonth() - 6));
+                    break;
+                case '1year':
+                    cutoffDate = new Date(now.setFullYear(now.getFullYear() - 1));
+                    break;
+                default:
+                    return messages; // 'all' case, return all messages
+            }
+
+            return messages.filter(message => new Date(message.ts) >= cutoffDate);
+        }        
+
+        function updateProgress(percentage) {
+            const progressPath = document.getElementById('progressPath');
+            const progressText = document.getElementById('progressText');
+            const radius = 135;
+            const circumference = 2 * Math.PI * radius;
+            
+            const offset = circumference - (percentage / 100) * circumference;
+            const angle = (percentage / 100) * 360;
+            
+            const x = 150 + radius * Math.sin(angle * Math.PI / 180);
+            const y = 150 - radius * Math.cos(angle * Math.PI / 180);
+            
+            const largeArcFlag = percentage > 50 ? 1 : 0;
+            
+            progressPath.setAttribute('d', `M150,15 A135,135 0 ${largeArcFlag},1 ${x},${y}`);
+            progressText.textContent = `Found: ${totalMessagesFound}`;
+        }
+
+        function filterResultsByTime(results) {
+            // This function is no longer needed as we're filtering messages in searchRoom
+            return results;
         }
 
         function displayResults(results) {
