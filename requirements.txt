@@ -3,4 +3,5 @@ requests==2.31.0
 rocketchat-async==4.1.0
 websockets==10.4
 Pillow==10.0.0
-
+Flask==3.0.3
+Flask-Cors==4.0.1

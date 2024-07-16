@@ -7,7 +7,7 @@ import threading
 import os
 from datetime import datetime, timedelta
 from RocketIcon import RocketchatManager, icon_manager, RulesManager
-from RocketIcon.proxy_server import run_proxy_server
+from RocketIcon.proxy_server import run_proxy_server, get_proxy_url
 import requests
  
 TITLE = "Rocket Icon"
@@ -116,7 +116,7 @@ def quit():
     icon_manager.stop()
     
     # Stop the proxy server
-    requests.get('http://localhost:8000/shutdown')
+    requests.get(f"{get_proxy_url()}/shutdown")
 
 def on_clicked_quit(icon, item):
     if item.text == "Quit":
@@ -134,6 +134,12 @@ def on_clicked_show(icon, item):
     if "{ROOM}" in launch_program:
         launch_program = launch_program.replace("{ROOM}", rules_manager.get_room_to_visit(), 1)
     os.startfile(launch_program)
+
+def on_search(icon, item):
+    os.startfile(f"{get_proxy_url()}")
+
+def on_version(icon, item):
+     os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
 
 def on_clicked_settings(icon, item):
     os.startfile(rules_manager.config_path)
@@ -199,17 +205,21 @@ def on_mark_read():
 def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
+  
+        pystray.MenuItem("Version 1.0.2", on_version),
+        pystray.MenuItem("Settings", on_clicked_settings),
+        pystray.MenuItem("Rules", on_clicked_rules),
+        pystray.MenuItem("Subscriptions", on_clicked_subscriptions),
+        pystray.MenuItem("_______________________", on_clicked_separator),     
+        pystray.MenuItem("Search", on_search),             
+        pystray.MenuItem("_______________________", on_clicked_separator),          
         pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
         pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
         pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
         pystray.MenuItem("Resume", on_clicked_resume),
-        pystray.MenuItem("Mark all as read", on_mark_read),        
+        pystray.MenuItem("Mark all as read", on_mark_read),              
         pystray.MenuItem("_______________________", on_clicked_separator),
-        pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
-        pystray.MenuItem("Settings", on_clicked_settings),
-        pystray.MenuItem("Rules", on_clicked_rules),
-        pystray.MenuItem("Subscriptions", on_clicked_subscriptions),
-        pystray.MenuItem("_______________________", on_clicked_separator),
+        pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),        
         pystray.MenuItem("Quit", on_clicked_quit)
     )
 
