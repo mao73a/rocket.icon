@@ -8,6 +8,9 @@ import os
 from datetime import datetime, timedelta
 from RocketIcon import RocketchatManager, icon_manager, RulesManager
 import os
+from flask import Flask, request, jsonify, send_from_directory
+import requests
+from flask_cors import CORS
  
 TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
@@ -19,6 +22,12 @@ subscription_lock = threading.Lock()
 config_path = os.path.expanduser("~/.rocketIcon")
 rules_manager = RulesManager(config_path)
 rc_manager = RocketchatManager(subscription_lock, rules_manager)
+
+# Proxy server setup
+app = Flask(__name__)
+CORS(app)
+
+proxy_thread = None
 
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
@@ -110,10 +119,16 @@ def monitor_all_subscriptions():
         rc_manager.stop()
 
 def quit():
+    global proxy_thread
     rc_manager.stop()
     stop_event.set()
     pause_event.set()  # Resume if paused to ensure clean exit
-    icon_manager.stop()    
+    icon_manager.stop()
+    
+    # Stop the proxy server
+    if proxy_thread:
+        requests.get('http://localhost:8000/shutdown')
+        proxy_thread.join()
         
 
 def on_clicked_quit(icon, item):
@@ -237,6 +252,54 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
             icon_manager.notify(f"{rc_manager.get_last_message_text(rid)}", fname)      
 
+# Proxy server routes
+@app.route('/')
+def serve_html():
+    with open('rc_search.html', 'r') as file:
+        content = file.read()
+        content = content.replace('{{ROCKET_CHAT_URL}}', rc_manager._SERVER_ADDRESS)
+    return content
+
+@app.route('/api/subscriptions', methods=['GET'])
+def get_subscriptions():
+    url = f"{rc_manager._SERVER_ADDRESS}/api/v1/subscriptions.get"
+    headers = {
+        'X-User-Id': rc_manager._ROCKET_USER_ID,
+        'X-Auth-Token': rc_manager._ROCKET_TOKEN,
+    }
+    response = requests.get(url, headers=headers)
+    data = response.json()
+    subscriptions = data.get('update', [])
+    return jsonify({'subscriptions': subscriptions})
+
+@app.route('/api/search', methods=['GET'])
+def search_messages():
+    room_id = request.args.get('roomId')
+    search_text = request.args.get('searchText')
+    
+    url = f"{rc_manager._SERVER_ADDRESS}/api/v1/chat.search"
+    headers = {
+        'X-User-Id': rc_manager._ROCKET_USER_ID,
+        'X-Auth-Token': rc_manager._ROCKET_TOKEN,
+    }
+    params = {
+        'roomId': room_id,
+        'searchText': search_text,
+    }
+    response = requests.get(url, headers=headers, params=params)
+    return jsonify(response.json())
+
+@app.route('/shutdown', methods=['GET'])
+def shutdown():
+    shutdown_func = request.environ.get('werkzeug.server.shutdown')
+    if shutdown_func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    shutdown_func()
+    return 'Server shutting down...'
+
+def run_proxy_server():
+    app.run(debug=False, port=8000)
+
 if __name__ == "__main__":
     icon_manager.set_icon_title(TITLE)
     load_config()
@@ -249,10 +312,13 @@ if __name__ == "__main__":
     rc_manager.set_on_reload(my_on_reload)
     rc_manager.start() # start a new thread
 
+    # Start the proxy server in a separate thread
+    proxy_thread = threading.Thread(target=run_proxy_server)
+    proxy_thread.start()
+
     time.sleep(1)
     # for sig in (signal.SIGINT, signal.SIGTERM):
     #     asyncio_loop.add_signal_handler(sig, stop_loop)
-
 
     icon_manager.icon.run(setup=setup)
 
