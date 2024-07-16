@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 import requests
 from flask_cors import CORS
-import os
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
@@ -13,7 +12,10 @@ USER_TOKEN = "Se9BYjNkhJRbDzvrQpCJaBN6olOUJFaqw2nE9X_o49U"
 
 @app.route('/')
 def serve_html():
-    return send_from_directory('.', 'rc_search.html')
+    with open('rc_search.html', 'r') as file:
+        content = file.read()
+        content = content.replace('{{ROCKET_CHAT_URL}}', SERVER_ADDRESS)
+    return content
 
 @app.route('/api/subscriptions', methods=['GET'])
 def get_subscriptions():

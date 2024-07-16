@@ -8,44 +8,100 @@
     <style>
         body {
             background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
         }
         .search-container {
-            max-width: 600px;
-            margin: 100px auto;
+            max-width: 800px;
+            margin: 50px auto;
         }
         .search-title {
-            font-size: 2.5rem;
-            color: #007bff;
-            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #4285f4;
+            margin-bottom: 20px;
+        }
+        .search-form {
+            margin-bottom: 20px;
+        }
+        .time-filter {
+            margin-bottom: 20px;
+        }
+        .time-filter .nav-link {
+            color: #5f6368;
+        }
+        .time-filter .nav-link.active {
+            color: #1a73e8;
+            border-bottom: 3px solid #1a73e8;
         }
         .results-container {
-            margin-top: 30px;
+            margin-top: 20px;
+        }
+        .card {
+            margin-bottom: 15px;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .card-title {
+            color: #1a0dab;
+            font-size: 1.1rem;
+        }
+        .card-subtitle {
+            color: #006621;
+            font-size: 0.9rem;
+        }
+        .card-text {
+            color: #545454;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="search-container text-center">
-            <h1 class="search-title">Rocket.Chat Message Search</h1>
-            <form id="searchForm">
-                <div class="input-group mb-3">
-                    <input type="text" id="searchInput" class="form-control" placeholder="Enter search text">
-                    <button class="btn btn-primary" type="submit" id="searchButton">Search</button>
-                </div>
-            </form>
-            <div id="resultsContainer" class="results-container"></div>
+    <div class="container search-container">
+        <h1 class="search-title">Rocket.Chat Message Search</h1>
+        <form id="searchForm" class="search-form">
+            <div class="input-group mb-3">
+                <input type="text" id="searchInput" class="form-control" placeholder="Enter search text">
+                <button class="btn btn-primary" type="submit" id="searchButton">Search</button>
+            </div>
+        </form>
+        <div class="time-filter">
+            <ul class="nav nav-tabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-time-filter="all">Everything</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-time-filter="1month">Last month</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-time-filter="6months">Last 6 months</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-time-filter="1year">Last year</a>
+                </li>
+            </ul>
         </div>
+        <div id="resultsContainer" class="results-container"></div>
     </div>
 
     <script>
-        const ROCKET_CHAT_URL = 'https://chat.czk.comarch.com'; // Replace with your actual Rocket.Chat server URL
-        document.getElementById('searchButton').addEventListener('click', performSearch);
+        const ROCKET_CHAT_URL = '{{ROCKET_CHAT_URL}}';
+        let currentTimeFilter = 'all';
 
-                document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const searchForm = document.getElementById('searchForm');
             searchForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevent the form from submitting traditionally
+                e.preventDefault();
                 performSearch();
+            });
+
+            const timeFilterLinks = document.querySelectorAll('.time-filter .nav-link');
+            timeFilterLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    timeFilterLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTimeFilter = this.getAttribute('data-time-filter');
+                    performSearch();
+                });
             });
         });
 
@@ -66,11 +122,32 @@
 
                 const subscriptions = subscriptionsData.subscriptions;
                 const searchResults = await Promise.all(subscriptions.map(sub => searchRoom(sub.rid, searchText, sub.fname, sub.t)));
-                displayResults(searchResults.flat());
+                displayResults(filterResultsByTime(searchResults.flat()));
             } catch (error) {
                 console.error('Error:', error);
                 resultsContainer.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while searching: ${error.message}</div>`;
             }
+        }
+
+        function filterResultsByTime(results) {
+            const now = new Date();
+            let cutoffDate;
+
+            switch (currentTimeFilter) {
+                case '1month':
+                    cutoffDate = new Date(now.setMonth(now.getMonth() - 1));
+                    break;
+                case '6months':
+                    cutoffDate = new Date(now.setMonth(now.getMonth() - 6));
+                    break;
+                case '1year':
+                    cutoffDate = new Date(now.setFullYear(now.getFullYear() - 1));
+                    break;
+                default:
+                    return results; // 'all' case, return all results
+            }
+
+            return results.filter(result => new Date(result.ts) >= cutoffDate);
         }
 
         async function getSubscriptions() {
@@ -80,8 +157,6 @@
             }
             return await response.json();
         }
- 
- 
 
         async function searchRoom(roomId, searchText, roomName, roomType) {
             const response = await fetch(`/api/search?roomId=${encodeURIComponent(roomId)}&searchText=${encodeURIComponent(searchText)}`);
@@ -109,10 +184,10 @@
                 const messageDate = new Date(result.ts).toLocaleString();
                 
                 return `
-                <div class="card mb-3">
+                <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">${escapeHtml(result.roomName)}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">
+                        <h6 class="card-subtitle mb-2">
                             ${escapeHtml(result.u.name)} - 
                             <a href="${messageUrl}" target="_blank" rel="noopener noreferrer">${messageDate}</a>
                         </h6>
