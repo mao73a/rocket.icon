@@ -10,7 +10,8 @@ This software is created to address some of these issues. Rocket.Icon creates an
 - Tray icon can blink
 - Search messages through the web bage
 
-![image](https://github.com/user-attachments/assets/9b790f26-8f4e-4ce3-8402-8686326036ea)
+![image](https://github.com/user-attachments/assets/f7570cf8-1b7c-4e88-9c71-0451b421c9c2)
+
 # Installation
 
 ```sh
