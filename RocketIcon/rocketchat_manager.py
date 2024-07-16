@@ -4,6 +4,7 @@ from rocketchat_async import RocketChat
 import requests
 import json
 import time
+import datetime
 
 class RocketchatManager:
     def __init__(self, subscription_lock, rules_manager):
@@ -122,11 +123,38 @@ class RocketchatManager:
         else:
             txt = last_msg_content.get("text")
         return txt
+    
+    def get_unread_messages(self, channel_id, last_seen):
+        try:
+            response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/channels.messages?roomId={channel_id}', headers= self.HEADERS)
+            if response.status_code == 200:
+                messages_data = response.json()
+            else:
+                self.do_error(f"Failed to fetch data. Status code: {response.status_code}")
+                return None
+        except Exception as e:
+            self.do_error(f"Network error: {e}")        
+            return None       
+                
+        unread_messages = []
+        for message in messages_data['messages']:
+            message_time = datetime.datetime.strptime(message['ts'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            if message_time > last_seen:
+                unread_messages.append(message)
+        return unread_messages
+        
 
+    
+    def get_unread_messages_since_last_seen(self, subscription):
+        channel_id = subscription['rid']
+        last_seen = datetime.datetime.strptime(subscription['ls'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        unread_messages = self.get_unread_messages(channel_id, last_seen)
+        print(unread_messages)
+            
 
-    def handle_channel_changes(self, channel_id, channel_type):
+    def handle_channel_changes(self, payload):
         print("===== handle_channel_changes =====")
-        print(f"  channel_id={channel_id} channel_type={channel_type}")        
+        print(f" {payload}")        
         #self.restart()
 
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
@@ -187,7 +215,7 @@ class RocketchatManager:
                 # 1. Set up the desired callbacks...
                 #for channel_id, channel_type in await rc.get_channels(): //to few informations returned :-(
                 await self.unsubscribe_all()
-                await self._rocketChat.subscribe_to_channel_changes(self.handle_channel_changes)
+                await self._rocketChat.subscribe_to_channel_changes_raw(self.handle_channel_changes)
                 print("Geting all subscriptions...")                
                 data = self.get_all_subscriptions()
                 if data:
@@ -205,8 +233,9 @@ class RocketchatManager:
                                     self._subscription_dict[channel_id]=sub
                                     await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
                                     print(f'subscribed to  {fname}  {channel_id}')
-                                    if unread>0:
+                                    if unread>0  :
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
+                                          #self.get_unread_messages_since_last_seen(sub)
                                           self.add_historical_message(channel_id)  
                     # await self._rocketChat.run_forever()
                     task = asyncio.create_task(self._rocketChat.run_forever())

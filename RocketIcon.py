@@ -99,7 +99,7 @@ def monitor_all_subscriptions():
                 if len(rules_manager.unread_counts) == 0:
                     icon_manager.set_basic_image()
             stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
-            if elapsed_time > 3:
+            if elapsed_time > 5:
                 print("Reinitialize connections after wakeup...")
                 restart() #restart after sleep
             counter += 1    
