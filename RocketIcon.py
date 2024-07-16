@@ -114,9 +114,12 @@ def quit():
     stop_event.set()
     pause_event.set()  # Resume if paused to ensure clean exit
     icon_manager.stop()
-    
-    # Stop the proxy server
-    requests.get(f"{get_proxy_url()}/shutdown")
+    if proxy_thread:
+        time.sleep(0.5)
+        requests.get(f"{get_proxy_url()}/shutdown")
+        proxy_thread.join()        
+
+
 
 def on_clicked_quit(icon, item):
     if item.text == "Quit":
@@ -265,7 +268,7 @@ if __name__ == "__main__":
     # Start the proxy server in a separate thread
     proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,))
     proxy_thread.start()
-
+  
     time.sleep(1)
     # for sig in (signal.SIGINT, signal.SIGTERM):
     #     asyncio_loop.add_signal_handler(sig, stop_loop)

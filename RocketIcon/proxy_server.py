@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
+from waitress import serve
 
 PORT = 8000
 app = Flask(__name__)
@@ -9,7 +10,7 @@ CORS(app)  # This will enable CORS for all routes
 def create_proxy_server(rc_manager):
     @app.route('/')
     def serve_html():
-        with open('RocketIcon/rc_search.html', 'r') as file:
+        with open('rc_search.html', 'r') as file:
             content = file.read()
             content = content.replace('{{ROCKET_CHAT_URL}}', rc_manager._SERVER_ADDRESS)
         return content
@@ -57,4 +58,6 @@ def get_proxy_url():
 
 def run_proxy_server(rc_manager):
     proxy_app = create_proxy_server(rc_manager)
-    proxy_app.run(debug=False, port=PORT, use_reloader=False)
+
+    serve(app, host="0.0.0.0", port=PORT)
+    #proxy_app.run(debug=False, port=PORT, use_reloader=False)
