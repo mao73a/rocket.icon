@@ -252,7 +252,8 @@ if __name__ == "__main__":
     rc_manager.start() # start a new thread
 
     # Start the proxy server in a separate thread
-    proxy_thread = threading.Thread(target=run_proxy_server)
+    # Start the proxy server in a separate thread
+    proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,))
     proxy_thread.start()
 
     time.sleep(1)
