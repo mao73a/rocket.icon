@@ -8,7 +8,7 @@ import os
 from datetime import datetime, timedelta
 from RocketIcon import RocketchatManager, icon_manager, RulesManager
 import os
-
+ 
 TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
        
@@ -71,13 +71,18 @@ def check_config_loaded():
 def monitor_all_subscriptions():
     time.sleep(1)
     print(f"Starting loop")
+    counter = 1
+    previous_time = time.time()    
     try:
         while not stop_event.is_set():
             pause_event.wait()  # Wait for the pause event to be set
             if not check_config_loaded():
                 continue
 
-            with subscription_lock:      
+            with subscription_lock:   
+                current_time = time.time()
+                elapsed_time = current_time - previous_time 
+                previous_time = current_time                 
                 data = get_channels_for_messages(rc_manager.unread_messages)
                 if data:
                     updates = data.get('update', [])
@@ -88,24 +93,33 @@ def monitor_all_subscriptions():
                         summary = "\n".join([f"{fname}: {unread}" for fname, unread in rules_manager.unread_counts.items()])
                     else:
                         summary = "No new messages"
-                    icon_manager.set_icon_title(summary)                
+                    icon_manager.set_icon_title(summary)
 
 
                 if len(rules_manager.unread_counts) == 0:
                     icon_manager.set_basic_image()
             stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
+            if elapsed_time > 3:
+                print("Reinitialize connections after wakeup...")
+                restart() #restart after sleep
+            counter += 1    
+    except Exception as e:
+        print(f"Fatal error {e}")
+        quit()
     finally:
         rc_manager.stop()
 
+def quit():
+    rc_manager.stop()
+    stop_event.set()
+    pause_event.set()  # Resume if paused to ensure clean exit
+    icon_manager.stop()    
+        
 
 def on_clicked_quit(icon, item):
     if item.text == "Quit":
         print("Quit.")   
-        icon_manager.stop()     
-        rc_manager.stop()
-        stop_event.set()
-        pause_event.set()  # Resume if paused to ensure clean exit
-        icon.stop()
+        quit()
         print("Normal exit.")
 
 def on_clicked_show(icon, item):
@@ -115,8 +129,6 @@ def on_clicked_show(icon, item):
     else:
         icon_manager.set_launch_image()
     launch_program = ROCKET_PROGRAM    
-    #https://chat.czk.comarch.com/direct/Yme82NmFkeZu5s9khYme82NmFkeZu5s9kh
-    #https://chat.czk.comarch.com/group/motest    
     if "{ROOM}" in launch_program:
         launch_program = launch_program.replace("{ROOM}", rules_manager.get_room_to_visit(), 1)
     os.startfile(launch_program)
@@ -171,12 +183,16 @@ def on_clicked_subscriptions(icon, item):
         file.write(json_data)
     os.startfile(file_path)
 
-def on_mark_read():
+def restart():
     pause_event.clear() 
     rules_manager.reset()    
     rc_manager.restart()
     rc_manager.mark_read()
     pause_event.set()
+
+def on_mark_read():
+    rc_manager.mark_read()    
+    restart()
 
 def setup(icon):
     icon.visible = True

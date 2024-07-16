@@ -12,7 +12,8 @@ class IconManager:
         self.set_basic_image() 
 
     def stop(self):
-        self._stop_blinking()    
+        self._stop_blinking()  
+        self.icon.stop()  
 
     def set_basic_image(self):
         #print(f"  set_basic_image")

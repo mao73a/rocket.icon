@@ -5,14 +5,14 @@
         "sound": "chime.wav",
         "escalation": 1800,
         "preview":"False",
-        "blink_delay": 10
+        "blink_delay": 180
     },
     "rules": [
         {
             "name": "type:*",
             "is_videoconf": "Yes",
              "delay": "0",
-             "icon": "purple.png",
+             "icon": "phone.png",
              "sound": "outbound-call-ringing.wav",
              "active": "True",
              "preview":"True"
@@ -78,6 +78,7 @@
 ;   - purple.png
 ;   - red.png
 ;   - yellow.png
+;   - phone.png
 ;"escalation" : time in seconds to display windows notifications about unread messages
 ;"blink_delay": time in seconds to start bliknking tray icon since first showing the icon; 
 ;                if no "blink_delay" is defined or "blink_delay" is equal to 0 - the icon will not blink
