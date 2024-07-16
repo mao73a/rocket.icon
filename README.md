@@ -8,7 +8,7 @@ This software is created to address some of these issues. Rocket.Icon creates an
 - The ability to mute notifications for a specified amount of time, allowing you to focus on important work.
 - The ability to inform you about overlooked messages after a specified amount of time (escalation).
 - Tray icon can blink
-- Search messages through the web bage
+- Search messages through the web page interface
 
 ![image](https://github.com/user-attachments/assets/f7570cf8-1b7c-4e88-9c71-0451b421c9c2)
 
