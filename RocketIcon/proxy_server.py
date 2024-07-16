@@ -45,16 +45,16 @@ def create_proxy_server(rc_manager):
 
     @app.route('/shutdown', methods=['GET'])
     def shutdown():
-        shutdown_func = request.environ.get('werkzeug.server.shutdown')
-        if shutdown_func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        shutdown_func()
+        import os
+        import signal
+        os.kill(os.getpid(), signal.SIGINT)
         return 'Server shutting down...'
 
     return app
+
 def get_proxy_url():
     return f"http://localhost:{PORT}"
 
 def run_proxy_server(rc_manager):
     proxy_app = create_proxy_server(rc_manager)
-    proxy_app.run(debug=False, port=PORT)
+    proxy_app.run(debug=False, port=PORT, use_reloader=False)
