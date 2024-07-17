@@ -21,7 +21,6 @@ class RocketchatManager:
         self._rocketChat = None
         self._subscription_dict = {}
         self._rc_manager_thread = None   
-        self.status = "online"
 
     @property
     def ROCKET_USER_ID(self):
@@ -317,7 +316,6 @@ class RocketchatManager:
         :return: Boolean indicating success or failure
         """
         valid_statuses = ['online', 'busy', 'away', 'offline']
-        self.status = status
         if status not in valid_statuses:
             self.do_error(f"Invalid status. Must be one of {', '.join(valid_statuses)}")
             return False
