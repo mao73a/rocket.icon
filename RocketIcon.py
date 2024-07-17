@@ -213,15 +213,15 @@ def setup(icon):
         pystray.MenuItem("Settings", on_clicked_settings),
         pystray.MenuItem("Rules", on_clicked_rules),
         pystray.MenuItem("Subscriptions", on_clicked_subscriptions),
-        pystray.MenuItem("_______________________", on_clicked_separator),     
+        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),     
         pystray.MenuItem("Search", on_search),             
-        pystray.MenuItem("_______________________", on_clicked_separator),          
+        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),          
         pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
         pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
         pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
         pystray.MenuItem("Resume", on_clicked_resume),
         pystray.MenuItem("Mark all as read", on_mark_read),              
-        pystray.MenuItem("_______________________", on_clicked_separator),
+        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),        
         pystray.MenuItem("Quit", on_clicked_quit)
     )
