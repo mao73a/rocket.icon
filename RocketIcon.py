@@ -237,14 +237,20 @@ def setup(icon):
                      pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
                      pystray.MenuItem("Pause for 120 minutes",on_clicked_stop_120))),
         pystray.MenuItem("Resume", on_clicked_resume),
-        pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
-                                                pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
-                                                pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
-                                                pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
-                                                )),        
-        pystray.MenuItem("Mark all as read", on_mark_read),              
+        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),          
+        # pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
+        #                                         pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
+        #                                         pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
+        #                                         pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
+        #                                         )),        
+        pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
+        pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
+        pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
+        pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
+        ,             
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
-        pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),        
+        pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),       
+        pystray.MenuItem("Mark all as read", on_mark_read),                 
         pystray.MenuItem("Quit", on_clicked_quit)
     )
 
@@ -284,6 +290,7 @@ if __name__ == "__main__":
     threading.Thread(target=monitor_all_subscriptions).start()
     rc_manager.set_on_error_callback(my_on_error)
     rc_manager.set_on_reload(my_on_reload)
+    rc_manager.set_online()
     rc_manager.start() # start a new thread
 
     # Start the proxy server in a separate thread
