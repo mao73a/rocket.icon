@@ -341,7 +341,17 @@ class RocketchatManager:
             return False
         
     def get_status(self):
-        return self.status    
+        try:
+            response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/users.getStatus', headers=self.HEADERS)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('status', 'unknown')
+            else:
+                self.do_error(f"Failed to get user status. Status code: {response.status_code}")
+                return 'unknown'
+        except Exception as e:
+            self.do_error(f"Network error while getting user status: {e}")
+            return 'unknown'
 
     def set_online(self):
         """Set user status to online"""
