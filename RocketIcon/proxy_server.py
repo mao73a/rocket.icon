@@ -76,5 +76,5 @@ def run_proxy_server(p_rc_manager, p_rules_manager):
     rules_manager = p_rules_manager
     proxy_app = create_proxy_server(p_rc_manager)
 
-    serve(app, host="0.0.0.0", port=PORT)
+    serve(app, host="0.0.0.0", port=PORT,  threads=10)
     #proxy_app.run(debug=False, port=PORT, use_reloader=False)
