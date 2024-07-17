@@ -373,7 +373,6 @@ class RocketchatManager:
                 self._cached_status = 'unknown'
             
             self._last_status_check = current_time
-        
         return self._cached_status
 
     def set_online(self):

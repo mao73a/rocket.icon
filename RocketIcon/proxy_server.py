@@ -2,9 +2,12 @@ from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
 from waitress import serve
+import json
 
 PORT = 8000
 app = Flask(__name__)
+rules_manager = None
+rc_manager = None
 CORS(app)  # This will enable CORS for all routes
 
 def create_proxy_server(rc_manager):
@@ -50,14 +53,28 @@ def create_proxy_server(rc_manager):
         import signal
         os.kill(os.getpid(), signal.SIGINT)
         return 'Server shutting down...'
+    
+    @app.route('/api/debug', methods=['GET'])
+    def debug():
+        content = f"""
+<pre>rc_manager.unread_messages\n{json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True)}\n 
+rules_manager.unread_counts\n{json.dumps(rules_manager.unread_counts, indent=4, sort_keys=True)}</pre>
+"""
+        return content
+    
+    @app.route('/api/subscriptions', methods=['GET'])
+    def subscriptions():
+        return f"<pre>{json.dumps(rc_manager.get_all_subscriptions(), indent=4, sort_keys=True)}</pre>"
 
-    return app
 
 def get_proxy_url():
     return f"http://localhost:{PORT}"
 
-def run_proxy_server(rc_manager):
-    proxy_app = create_proxy_server(rc_manager)
+def run_proxy_server(p_rc_manager, p_rules_manager):
+    global rc_manager, rules_manager
+    rc_manager = p_rc_manager
+    rules_manager = p_rules_manager
+    proxy_app = create_proxy_server(p_rc_manager)
 
     serve(app, host="0.0.0.0", port=PORT)
     #proxy_app.run(debug=False, port=PORT, use_reloader=False)

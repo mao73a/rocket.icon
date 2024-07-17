@@ -248,7 +248,7 @@ class RulesManager:
             if sub.get('t') == 'd':
                 return f"direct/{sub.get('rid')}"
             else:
-                return f"group/{sub.get('fname')}"
+                return f"group/{sub.get('name')}"
         return ""
 
 

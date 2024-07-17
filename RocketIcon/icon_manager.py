@@ -13,6 +13,7 @@ class IconManager:
 
     def stop(self):
         self._stop_blinking()  
+        self.icon.visible=False
         self.icon.stop()  
 
     def set_basic_image(self):

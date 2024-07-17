@@ -72,6 +72,7 @@ def monitor_all_subscriptions():
     time.sleep(1)
     print(f"Starting loop")
     counter = 1
+    prev_status="Unknown"
     previous_time = time.time()    
     try:
         while not stop_event.is_set():
@@ -82,7 +83,7 @@ def monitor_all_subscriptions():
             with subscription_lock:   
                 current_time = time.time()
                 elapsed_time = current_time - previous_time 
-                previous_time = current_time                 
+                
                 data = get_channels_for_messages(rc_manager.unread_messages)
                 if data:
                     updates = data.get('update', [])
@@ -98,11 +99,23 @@ def monitor_all_subscriptions():
 
                 if len(rules_manager.unread_counts) == 0:
                     icon_manager.set_basic_image()
-            stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
+
+                if counter % 5 == 0:
+                    status = rc_manager.get_status()
+                    if status!=prev_status:
+                        icon_manager.icon.update_menu()
+                        prev_status=status
+                        print(f"User status is now {status}")
+ 
             if elapsed_time > 5:
                 print("Reinitialize connections after wakeup...")
+                if rc_manager.get_status()=='away':
+                    rc_manager.set_online()
                 restart() #restart after sleep
+
             counter += 1    
+            previous_time = time.time() 
+            stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
     except Exception as e:
         print(f"Fatal error {e}")
         quit()
@@ -140,8 +153,6 @@ def on_clicked_show(icon, item):
 def on_search(icon, item):
     os.startfile(f"{get_proxy_url()}")
 
-def on_version(icon, item):
-     os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
 
 def on_clicked_settings(icon, item):
     os.startfile(rules_manager.config_path)
@@ -151,11 +162,14 @@ def on_clicked_rules(icon, item):
 
 def pause_for_duration(duration):
     global pause_invoked
+    status = rc_manager.get_status()
     def stop():
         global pause_invoked
+
         pause_event.clear()  # Clear the pause event to block monitoring
         pause_invoked = True
         resume_time = datetime.now() + timedelta(seconds=duration)
+        rc_manager.set_busy(f"Busy until {resume_time.strftime('%H:%M')}")
         icon_manager.set_icon_title(f"Paused until {resume_time.strftime('%H:%M')}")
         icon_manager.set_delay_image()
         for _ in range(duration):
@@ -164,6 +178,7 @@ def pause_for_duration(duration):
             time.sleep(1)
         pause_event.set()  # Set the pause event to resume monitoring
         pause_invoked = False
+        rc_manager.set_user_status(status,"")
         icon_manager.set_icon_title(TITLE)
 
     threading.Thread(target=stop).start()
@@ -191,19 +206,19 @@ def on_clicked_separator(icon, item):
 
 def on_clicked_online(icon, item):
     rc_manager.set_online()
-    update_radio_items(icon)
+
 
 def on_clicked_busy(icon, item):
     rc_manager.set_busy('')
-    update_radio_items(icon)
+
 
 def on_clicked_away(icon, item):
     rc_manager.set_away('')    
-    update_radio_items(icon)
+
 
 def on_clicked_offline(icon, item):
     rc_manager.set_offline()       
-    update_radio_items(icon)
+
     
 def restart():
     pause_event.clear() 
@@ -215,13 +230,11 @@ def restart():
 def on_mark_read():
     rc_manager.mark_read()    
     restart()
+ 
 
-def update_radio_items(icon):
-    for item in icon.menu:
-        if isinstance(item, pystray.MenuItem) and getattr(item, 'radio', False):
-            if item.checked and callable(item.checked):
-                item.checked(item)
-
+def on_version(icon, item):
+     os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
+ 
 def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
@@ -248,7 +261,7 @@ def setup(icon):
         pystray.MenuItem("Mark all as read", on_mark_read),                 
         pystray.MenuItem("Quit", on_clicked_quit)
     )
-    update_radio_items(icon)
+
 
 def my_on_error(text):
     icon_manager.set_icon_title(text)
