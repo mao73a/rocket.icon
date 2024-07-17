@@ -115,7 +115,6 @@ def quit():
     pause_event.set()  # Resume if paused to ensure clean exit
     icon_manager.stop()
     if proxy_thread:
-        time.sleep(0.5)
         requests.get(f"{get_proxy_url()}/shutdown")
         proxy_thread.join()        
 
@@ -190,13 +189,6 @@ def on_clicked_separator(icon, item):
     icon_manager.set_basic_image()
     return
 
-def on_clicked_subscriptions(icon, item):
-    json_data = json.dumps(rc_manager.get_all_subscriptions(), indent=4, sort_keys=True)
-    file_path = os.path.join(config_path, "subscriptions.txt") 
-    with open(file_path, 'w') as file:
-        file.write(json_data)
-    os.startfile(file_path)
-
 def on_clicked_online(icon, item):
     rc_manager.set_online()
 
@@ -227,7 +219,6 @@ def setup(icon):
         pystray.MenuItem("Version 1.0.2", on_version),
         pystray.MenuItem("Settings", on_clicked_settings),
         pystray.MenuItem("Rules", on_clicked_rules),
-        pystray.MenuItem("Subscriptions", on_clicked_subscriptions),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),     
         pystray.MenuItem("Search", on_search),             
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),  
@@ -238,21 +229,16 @@ def setup(icon):
                      pystray.MenuItem("Pause for 120 minutes",on_clicked_stop_120))),
         pystray.MenuItem("Resume", on_clicked_resume),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),          
-        # pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
-        #                                         pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
-        #                                         pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
-        #                                         pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
-        #                                         )),        
         pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
         pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
         pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
-        pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
-        ,             
+        pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True),             
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),       
         pystray.MenuItem("Mark all as read", on_mark_read),                 
         pystray.MenuItem("Quit", on_clicked_quit)
     )
+    pass
 
 def my_on_error(text):
     icon_manager.set_icon_title(text)
@@ -280,6 +266,7 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
             icon_manager.notify(f"{rc_manager.get_last_message_text(rid)}", fname)      
 
+
 if __name__ == "__main__":
     icon_manager.set_icon_title(TITLE)
     load_config()
@@ -295,7 +282,7 @@ if __name__ == "__main__":
 
     # Start the proxy server in a separate thread
     # Start the proxy server in a separate thread
-    proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,))
+    proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,rules_manager, ))
     proxy_thread.start()
   
     time.sleep(1)
