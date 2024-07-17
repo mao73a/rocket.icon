@@ -338,18 +338,43 @@ class RocketchatManager:
             self.do_error(f"Network error while setting user status: {e}")
             return False
         
+    def __init__(self, subscription_lock, rules_manager):
+        self._ROCKET_USER_ID = ''
+        self._ROCKET_TOKEN = ''
+        self._SERVER_ADDRESS = ''
+        self.HEADERS = {}
+        self._on_error_callback = None
+        self._subscription_lock = subscription_lock
+        self._rules_manager = rules_manager
+ 
+        self._stop_event = None
+        self.unread_messages = {}
+        self._rocketChat = None
+        self._subscription_dict = {}
+        self._rc_manager_thread = None   
+        
+        # New attributes for caching status
+        self._last_status_check = 0
+        self._cached_status = 'unknown'
+
     def get_status(self):
-        try:
-            response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/users.getStatus', headers=self.HEADERS)
-            if response.status_code == 200:
-                data = response.json()
-                return data.get('status', 'unknown')
-            else:
-                self.do_error(f"Failed to get user status. Status code: {response.status_code}")
-                return 'unknown'
-        except Exception as e:
-            self.do_error(f"Network error while getting user status: {e}")
-            return 'unknown'
+        current_time = time.time()
+        if current_time - self._last_status_check >= 1:  # Check if 1 second has passed
+            try:
+                response = requests.get(f'{self.SERVER_ADDRESS}/api/v1/users.getStatus', headers=self.HEADERS)
+                if response.status_code == 200:
+                    data = response.json()
+                    self._cached_status = data.get('status', 'unknown')
+                else:
+                    self.do_error(f"Failed to get user status. Status code: {response.status_code}")
+                    self._cached_status = 'unknown'
+            except Exception as e:
+                self.do_error(f"Network error while getting user status: {e}")
+                self._cached_status = 'unknown'
+            
+            self._last_status_check = current_time
+        
+        return self._cached_status
 
     def set_online(self):
         """Set user status to online"""
