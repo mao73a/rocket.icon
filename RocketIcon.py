@@ -237,10 +237,10 @@ def setup(icon):
                      pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
                      pystray.MenuItem("Pause for 120 minutes",on_clicked_stop_120))),
         pystray.MenuItem("Resume", on_clicked_resume),
-        pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=rc_manager.get_status()=="online", radio=True),
-                                                pystray.MenuItem('Busy',    on_clicked_busy, checked=rc_manager.get_status()=="online", radio=True),
-                                                pystray.MenuItem('Busy',    on_clicked_away, checked=rc_manager.get_status()=="online", radio=True),
-                                                pystray.MenuItem('Offline', on_clicked_offline, checked=rc_manager.get_status()=="online", radio=True)                                                
+        pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=lambda item: rc_manager.get_status()=="online", radio=True),
+                                                pystray.MenuItem('Busy',    on_clicked_busy, checked=lambda item: rc_manager.get_status()=="busy", radio=True),
+                                                pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
+                                                pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True)                                                
                                                 )),        
         pystray.MenuItem("Mark all as read", on_mark_read),              
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
