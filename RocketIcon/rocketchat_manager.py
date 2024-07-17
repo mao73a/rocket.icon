@@ -378,19 +378,31 @@ class RocketchatManager:
 
     def set_online(self):
         """Set user status to online"""
-        return self.set_user_status('online')
+        if self.set_user_status('online'):
+            self._cached_status = 'online'
+            return True
+        return False
 
     def set_busy(self, message=None):
         """Set user status to busy"""
-        return self.set_user_status('busy', message)
+        if self.set_user_status('busy', message):
+            self._cached_status = 'busy'
+            return True
+        return False
 
     def set_away(self, message=None):
         """Set user status to away"""
-        return self.set_user_status('away', message)
+        if self.set_user_status('away', message):
+            self._cached_status = 'away'
+            return True
+        return False
 
     def set_offline(self):
         """Set user status to offline"""
-        return self.set_user_status('offline')
+        if self.set_user_status('offline'):
+            self._cached_status = 'offline'
+            return True
+        return False
 
 
 
