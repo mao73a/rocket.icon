@@ -191,15 +191,19 @@ def on_clicked_separator(icon, item):
 
 def on_clicked_online(icon, item):
     rc_manager.set_online()
+    update_radio_items(icon)
 
 def on_clicked_busy(icon, item):
     rc_manager.set_busy('')
+    update_radio_items(icon)
 
 def on_clicked_away(icon, item):
     rc_manager.set_away('')    
+    update_radio_items(icon)
 
 def on_clicked_offline(icon, item):
     rc_manager.set_offline()       
+    update_radio_items(icon)
     
 def restart():
     pause_event.clear() 
@@ -211,6 +215,12 @@ def restart():
 def on_mark_read():
     rc_manager.mark_read()    
     restart()
+
+def update_radio_items(icon):
+    for item in icon.menu:
+        if isinstance(item, pystray.MenuItem) and getattr(item, 'radio', False):
+            if item.checked and callable(item.checked):
+                item.checked(item)
 
 def setup(icon):
     icon.visible = True
@@ -238,7 +248,7 @@ def setup(icon):
         pystray.MenuItem("Mark all as read", on_mark_read),                 
         pystray.MenuItem("Quit", on_clicked_quit)
     )
-    pass
+    update_radio_items(icon)
 
 def my_on_error(text):
     icon_manager.set_icon_title(text)
