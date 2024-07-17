@@ -1,5 +1,5 @@
 import pystray
-from pystray import MenuItem as item
+from pystray import  Menu,  MenuItem as item
 import time
 import shutil
 import json
@@ -170,13 +170,16 @@ def pause_for_duration(duration):
     threading.Thread(target=stop).start()
 
 def on_clicked_stop_10(icon, item):
-    pause_for_duration(600)  # 600 seconds = 10 minutes
+    pause_for_duration(600)  #10 minutes
 
-def on_clicked_stop_30(icon, item):
-    pause_for_duration(1800)  # 1800 seconds = 30 minutes
+def on_clicked_stop_25(icon, item):
+    pause_for_duration(60*25)  # 25 minutes
 
 def on_clicked_stop_60(icon, item):
-    pause_for_duration(3600)  # 3600 seconds = 60 minutes
+    pause_for_duration(3600)  # 60 minutes
+
+def on_clicked_stop_120(icon, item):
+    pause_for_duration(7200)  # 120  minutes
 
 def on_clicked_resume(icon, item):
     pause_event.set()  # Set the pause event to resume monitoring
@@ -194,6 +197,18 @@ def on_clicked_subscriptions(icon, item):
         file.write(json_data)
     os.startfile(file_path)
 
+def on_clicked_online(icon, item):
+    rc_manager.set_online()
+
+def on_clicked_busy(icon, item):
+    rc_manager.set_busy('')
+
+def on_clicked_away(icon, item):
+    rc_manager.set_away('')    
+
+def on_clicked_offline(icon, item):
+    rc_manager.set_offline()       
+    
 def restart():
     pause_event.clear() 
     rules_manager.reset()    
@@ -215,11 +230,18 @@ def setup(icon):
         pystray.MenuItem("Subscriptions", on_clicked_subscriptions),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),     
         pystray.MenuItem("Search", on_search),             
-        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),          
-        pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
-        pystray.MenuItem("Pause for 30 minutes", on_clicked_stop_30),
-        pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
+        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),  
+        pystray.MenuItem("Pause...",  
+                Menu(pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
+                     pystray.MenuItem("Pause for 25 minutes", on_clicked_stop_25),
+                     pystray.MenuItem("Pause for 60 minutes", on_clicked_stop_60),
+                     pystray.MenuItem("Pause for 120 minutes",on_clicked_stop_120))),
         pystray.MenuItem("Resume", on_clicked_resume),
+        pystray.MenuItem("Set status...",  Menu(pystray.MenuItem('Online',  on_clicked_online, checked=rc_manager.get_status()=="online", radio=True),
+                                                pystray.MenuItem('Busy',    on_clicked_busy, checked=rc_manager.get_status()=="online", radio=True),
+                                                pystray.MenuItem('Busy',    on_clicked_away, checked=rc_manager.get_status()=="online", radio=True),
+                                                pystray.MenuItem('Offline', on_clicked_offline, checked=rc_manager.get_status()=="online", radio=True)                                                
+                                                )),        
         pystray.MenuItem("Mark all as read", on_mark_read),              
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),        
