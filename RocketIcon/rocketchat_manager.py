@@ -308,6 +308,52 @@ class RocketchatManager:
         for room_id in self.unread_messages.keys():
             self.mark_messages_as_read(room_id)
 
+    def set_user_status(self, status, message=None):
+        """
+        Set the user's status.
+        :param status: String, one of 'online', 'busy', 'away', 'offline'
+        :param message: Optional string for a custom status message
+        :return: Boolean indicating success or failure
+        """
+        valid_statuses = ['online', 'busy', 'away', 'offline']
+        if status not in valid_statuses:
+            self.do_error(f"Invalid status. Must be one of {', '.join(valid_statuses)}")
+            return False
+
+        data = {"status": status}
+        if message:
+            data["message"] = message
+
+        try:
+            response = requests.post(f'{self.SERVER_ADDRESS}/api/v1/users.setStatus', 
+                                     headers=self.HEADERS, 
+                                     json=data)
+            if response.status_code == 200:
+                print(f"User status set to {status}")
+                return True
+            else:
+                self.do_error(f"Failed to set user status. Status code: {response.status_code}")
+                return False
+        except Exception as e:
+            self.do_error(f"Network error while setting user status: {e}")
+            return False
+
+    def set_online(self):
+        """Set user status to online"""
+        return self.set_user_status('online')
+
+    def set_busy(self, message=None):
+        """Set user status to busy"""
+        return self.set_user_status('busy', message)
+
+    def set_away(self, message=None):
+        """Set user status to away"""
+        return self.set_user_status('away', message)
+
+    def set_offline(self):
+        """Set user status to offline"""
+        return self.set_user_status('offline')
+
 
 
 
