@@ -239,7 +239,7 @@ def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
   
-        pystray.MenuItem("Version 1.0.2", on_version),
+        pystray.MenuItem("Version 1.0.3", on_version),
         pystray.MenuItem("Settings", on_clicked_settings),
         pystray.MenuItem("Rules", on_clicked_rules),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),     
