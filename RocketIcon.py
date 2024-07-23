@@ -134,6 +134,7 @@ def monitor_all_subscriptions():
                     if status=='online' and idle_duration_sec>AUTOAWAY_TIME_SEC:
                         rc_manager.set_away('')
                         need_restore_status=status
+                        icon_manager.set_away_image()
                     elif need_restore_status and idle_duration_sec<=AUTOAWAY_TIME_SEC:
                         rc_manager.set_user_status(need_restore_status)
                         need_restore_status=""

@@ -8,13 +8,13 @@ class IconManager:
     def __init__(self,  title):
         self.icon = pystray.Icon("basic")
         self.title = title
-        self._current_priority = float('inf') 
-        self.set_basic_image() 
+        self._current_priority = float('inf')
+        self.set_basic_image()
 
     def stop(self):
-        self._stop_blinking()  
+        self._stop_blinking()
         self.icon.visible=False
-        self.icon.stop()  
+        self.icon.stop()
 
     def set_basic_image(self):
         #print(f"  set_basic_image")
@@ -24,13 +24,22 @@ class IconManager:
     def set_error_image(self):
         self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2error.png")
-    
+
     def set_reload_image(self):
         self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2reload.png")
 
+    def set_away_image(self):
+        self._stop_blinking()
+        for i in range(3):
+            self.icon.icon = Image.open("icons/bubble.png")
+            time.sleep(0.3)
+            self.icon.icon = Image.open("icons/bubble2.png")
+            time.sleep(0.3)
+
+
     def reset_priority(self):
-        self._current_priority = float('inf') 
+        self._current_priority = float('inf')
 
     def set_notification_image(self, icon_name, prior=0, blink_delay=0):
         if not icon_name:
@@ -50,7 +59,7 @@ class IconManager:
 
     def set_launch_image(self):
         #self._stop_blinking()
-        self.icon.icon = Image.open("icons/bubble2launch.png")        
+        self.icon.icon = Image.open("icons/bubble2launch.png")
 
     def set_icon_title(self, title):
         if len(title) > 128:
