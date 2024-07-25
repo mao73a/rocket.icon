@@ -72,8 +72,10 @@ class IconManager:
         self.icon.title = title
 
     def notify(self, message, title):
-        if len(title) > 256:
-            title = title[:250]+"..."
+        if len(title) > 128:
+            title = title[:128]
+        if len(message) > 256:
+            message = message[:250]+"..."
         self.icon.notify(message, title)
 
 
