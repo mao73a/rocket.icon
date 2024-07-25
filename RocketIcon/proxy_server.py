@@ -1,8 +1,11 @@
+import logging
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
 from waitress import serve
 import json
+
+logger = logging.getLogger(__name__)
 
 PORT = 8000
 app = Flask(__name__)
@@ -34,7 +37,7 @@ def create_proxy_server(rc_manager):
     def search_messages():
         room_id = request.args.get('roomId')
         search_text = request.args.get('searchText')
-        
+
         url = f"{rc_manager._SERVER_ADDRESS}/api/v1/chat.search"
         headers = {
             'X-User-Id': rc_manager._ROCKET_USER_ID,
@@ -53,15 +56,15 @@ def create_proxy_server(rc_manager):
         import signal
         os.kill(os.getpid(), signal.SIGINT)
         return 'Server shutting down...'
-    
+
     @app.route('/api/debug', methods=['GET'])
     def debug():
         content = f"""
-<pre>rc_manager.unread_messages\n{json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True)}\n 
+<pre>rc_manager.unread_messages\n{json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True)}\n
 rules_manager.unread_counts\n{json.dumps(rules_manager.unread_counts, indent=4, sort_keys=True)}</pre>
 """
         return content
-    
+
     @app.route('/api/subscriptions', methods=['GET'])
     def subscriptions():
         return f"<pre>{json.dumps(rc_manager.get_all_subscriptions(), indent=4, sort_keys=True)}</pre>"

@@ -8,3 +8,5 @@ config.json
 subscriptions.txt
 .aider*
 test*.py
+/rocketicon.lnk
+/rocketicon.log

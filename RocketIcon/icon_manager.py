@@ -1,8 +1,11 @@
+import logging
 import pystray
 from PIL import Image
 import winsound
 import threading
 import time
+
+logger = logging.getLogger(__name__)
 
 class IconManager:
     def __init__(self,  title):
@@ -17,7 +20,7 @@ class IconManager:
         self.icon.stop()
 
     def set_basic_image(self):
-        #print(f"  set_basic_image")
+        #logger.info(f"  set_basic_image")
         self._stop_blinking()
         self.icon.icon = Image.open("icons/bubble2.png")
 
@@ -31,11 +34,13 @@ class IconManager:
 
     def set_away_image(self):
         self._stop_blinking()
+        current_icon = self.icon.icon
         for i in range(3):
             self.icon.icon = Image.open("icons/bubble.png")
             time.sleep(0.3)
-            self.icon.icon = Image.open("icons/bubble2.png")
+            self.icon.icon = current_icon
             time.sleep(0.3)
+
 
 
     def reset_priority(self):
@@ -46,7 +51,7 @@ class IconManager:
             return
         if self._current_priority > prior:
             self._current_priority = prior
-            print(f"  set_notification_image {icon_name}")
+            logger.info(f"  set_notification_image {icon_name}")
             if blink_delay>0:
                 self._start_blinking(icon_name, blink_delay)
             else:
@@ -67,11 +72,13 @@ class IconManager:
         self.icon.title = title
 
     def notify(self, message, title):
+        if len(title) > 256:
+            title = title[:250]+"..."
         self.icon.notify(message, title)
 
 
     def play_sound(self, sound_name):
-        print(f"  play_sound {sound_name}")
+        logger.info(f"  play_sound {sound_name}")
         winsound.PlaySound(f"sounds/{sound_name}", winsound.SND_FILENAME | winsound.SND_ASYNC)
 
     def _start_blinking(self, icon_name, blink_delay):

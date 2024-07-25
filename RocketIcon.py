@@ -1,3 +1,4 @@
+import logging
 import pystray
 from pystray import  Menu,  MenuItem as item
 import time
@@ -10,6 +11,9 @@ from RocketIcon import RocketchatManager, icon_manager, RulesManager
 from RocketIcon.proxy_server import run_proxy_server, get_proxy_url
 import requests
 
+config_path = os.path.expanduser("~/.rocketIcon")
+logger = logging.getLogger(__name__)
+
 TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
 
@@ -17,7 +21,6 @@ pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()
 subscription_lock = threading.Lock()
-config_path = os.path.expanduser("~/.rocketIcon")
 rules_manager = RulesManager(config_path)
 rc_manager = RocketchatManager(subscription_lock, rules_manager)
 
@@ -48,7 +51,7 @@ def load_config():
         icon_manager.notify("Config loaded", TITLE)
 
     except Exception as e:
-        print(f"Error reading config file {e}")
+        logger.info(f"Error reading config file {e}")
 
 def get_channels_for_messages(channels):
     updates = []
@@ -93,7 +96,7 @@ else:
 
 def monitor_all_subscriptions():
     time.sleep(1)
-    print(f"Starting loop")
+    logger.info(f"Starting loop")
     counter = 1
     prev_status="Unknown"
     need_restore_status=""
@@ -130,7 +133,7 @@ def monitor_all_subscriptions():
                     if status!=prev_status:
                         icon_manager.icon.update_menu()
                         prev_status=status
-                        print(f"User status is now {status}. AutoAway set to {AUTOAWAY_TIME_SEC}")
+                        logger.info(f"User status is now {status}. AutoAway set to {AUTOAWAY_TIME_SEC}")
                     if status=='online' and idle_duration_sec>AUTOAWAY_TIME_SEC:
                         rc_manager.set_away('')
                         need_restore_status=status
@@ -141,7 +144,7 @@ def monitor_all_subscriptions():
 
 
             if elapsed_time > 5:
-                print("Reinitialize connections after wakeup...")
+                logger.info("Reinitialize connections after wakeup...")
                 if rc_manager.get_status()=='away':
                     rc_manager.set_online()
                 restart() #restart after sleep
@@ -150,7 +153,7 @@ def monitor_all_subscriptions():
             previous_time = time.time()
             stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
     except Exception as e:
-        print(f"Fatal error {e}")
+        logger.info(f"Fatal error {e}")
         quit()
     finally:
         rc_manager.stop()
@@ -168,9 +171,9 @@ def quit():
 
 def on_clicked_quit(icon, item):
     if item.text == "Quit":
-        print("Quit.")
+        logger.info("Quit.")
         quit()
-        print("Normal exit.")
+        logger.info("Normal exit.")
 
 def on_clicked_show(icon, item):
     global pause_invoked
@@ -231,7 +234,7 @@ def on_clicked_stop_120(icon, item):
 def on_clicked_resume(icon, item):
     pause_event.set()  # Set the pause event to resume monitoring
     icon_manager.set_icon_title(TITLE)
-    print("Resuming...")
+    logger.info("Resuming...")
 
 def on_clicked_separator(icon, item):
     icon_manager.set_basic_image()
@@ -324,6 +327,8 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename=os.path.join(config_path, 'rocketicon.log'), level=logging.INFO, format = '%(asctime)s  %(message)s')
+    logger.info('Started')
     icon_manager.set_icon_title(TITLE)
     load_config()
     rules_manager.set_on_escalation(my_on_escalation)
@@ -346,4 +351,5 @@ if __name__ == "__main__":
     #     asyncio_loop.add_signal_handler(sig, stop_loop)
 
     icon_manager.icon.run(setup=setup)
+    logger.info('Finished')
 
