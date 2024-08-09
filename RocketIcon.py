@@ -10,6 +10,10 @@ from datetime import datetime, timedelta
 from RocketIcon import RocketchatManager, icon_manager, RulesManager
 from RocketIcon.proxy_server import run_proxy_server, get_proxy_url
 import requests
+from global_hotkeys import *
+import tkinter as tk
+from tkinter import simpledialog
+import json
 
 config_path = os.path.expanduser("~/.rocketIcon")
 logger = logging.getLogger(__name__)
@@ -17,12 +21,14 @@ logger = logging.getLogger(__name__)
 TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
 
+
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()
 subscription_lock = threading.Lock()
 rules_manager = RulesManager(config_path)
 rc_manager = RocketchatManager(subscription_lock, rules_manager)
+g_last_preview_showed = {'rid':1,'name':'aaa', 'text':'some text'}
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
 def ensure_local_files():
@@ -153,10 +159,14 @@ def monitor_all_subscriptions():
             previous_time = time.time()
             stop_event.wait(C_MAIN_LOOP_WAIT_TIME)
     except Exception as e:
+        logger.info(json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True))
+        logger.info(json.dumps(rules_manager.unread_counts, indent=4, sort_keys=True))
+        logger.error("An error occurred", exc_info=True)
         logger.info(f"Fatal error {e}")
         quit()
     finally:
         rc_manager.stop()
+
 
 def quit():
     rc_manager.stop()
@@ -264,18 +274,54 @@ def restart():
     pause_event.set()
 
 def on_mark_read():
+    print("on_mark_read")
     rc_manager.mark_read()
     restart()
+
+
+def display_input_message(title, text, initialvalue):
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+    root.attributes('-topmost', True)  # Make the root window topmost
+    answer = simpledialog.askstring(title, text,initialvalue=initialvalue)
+    root.destroy()
+    return answer
+
+def on_quick_response():
+    global g_last_preview_showed
+    print("on_quick_response")
+
+    if g_last_preview_showed.get('rid'):
+        print("  -> do on_quick_response")
+        answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')}, for message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
+        if answer:
+            rc_manager.send_message(g_last_preview_showed.get('rid'), answer)
+            rc_manager.mark_read()
+            restart()
+
+# def on_quick_response():
+#     global g_last_preview_showed
+#     print("on_quick_response")
+#     if g_last_preview_showed.get('rid'):
+#         print("  -> do on_quick_response")
+#         root = tk.Tk()
+#         root.withdraw()  # Hide the root window
+#         answer = simpledialog.askstring(f"Quick reponse...", f"To {g_last_preview_showed.get('name')}, for message: \"{g_last_preview_showed.get('text')[:30]}\"...", initialvalue="")
+#         root.destroy()
+#         rc_manager.quick_response(g_last_preview_showed.get('rid'), answer)
+#         rc_manager.mark_read()
+#         restart()
 
 
 def on_version(icon, item):
      os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
 
+
 def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
-
-        pystray.MenuItem("Version 1.0.3", on_version),
+        pystray.MenuItem("Version 1.0.4", on_version),
+        pystray.MenuItem("Quit", on_clicked_quit),
         pystray.MenuItem("Settings", on_clicked_settings),
         pystray.MenuItem("Rules", on_clicked_rules),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
@@ -294,9 +340,19 @@ def setup(icon):
         pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
-        pystray.MenuItem("Mark all as read", on_mark_read),
-        pystray.MenuItem("Quit", on_clicked_quit)
+        pystray.MenuItem("Mark all as read", on_mark_read)
     )
+
+
+def my_on_api_callback(action):
+    logger.info(f"API call {action}")
+    if action=="markallread":
+        on_mark_read()
+    elif action=="quickresponse":
+        on_quick_response()
+    elif action=="showrocketapp":
+        on_clicked_show(None, None)
+
 
 
 def my_on_error(text):
@@ -316,6 +372,7 @@ def my_on_reload():
     icon_manager.set_reload_image()
 
 def my_on_unread_message(matching_rule, subscription, is_new_message):
+    global g_last_preview_showed
     fname = subscription.get('fname')
     rid = subscription.get('rid')
     icon_manager.set_notification_image(matching_rule.get("icon", rules_manager.DEFAULTS.get("icon")), matching_rule.get("prior"),
@@ -323,6 +380,7 @@ def my_on_unread_message(matching_rule, subscription, is_new_message):
     if is_new_message:
         icon_manager.play_sound(matching_rule.get("sound", rules_manager.DEFAULTS.get("sound")))
         if (matching_rule.get("preview", rules_manager.DEFAULTS.get("preview"))) == "True":
+            g_last_preview_showed={'rid':rid, 'name':fname, 'text': rc_manager.get_last_message_text(rid)}
             icon_manager.notify(f"{rc_manager.get_last_message_text(rid)}", fname)
 
 
@@ -330,6 +388,11 @@ if __name__ == "__main__":
     logging.basicConfig(filename=os.path.join(config_path, 'rocketicon.log'), level=logging.INFO, format = '%(asctime)s  %(message)s')
     logger.info('Started')
     icon_manager.set_icon_title(TITLE)
+    bindings = [
+        ["control + m", None, on_mark_read, True],
+        ["control + alt + m", None, on_quick_response, True]
+    ]
+    #register_hotkeys(bindings)
     load_config()
     rules_manager.set_on_escalation(my_on_escalation)
     rules_manager.set_on_file_changed(my_on_file_changed, stop_event)  # starts a new thread
@@ -343,7 +406,7 @@ if __name__ == "__main__":
 
     # Start the proxy server in a separate thread
     # Start the proxy server in a separate thread
-    proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,rules_manager, ))
+    proxy_thread = threading.Thread(target=run_proxy_server, args=(rc_manager,rules_manager,my_on_api_callback))
     proxy_thread.start()
 
     time.sleep(1)
@@ -351,5 +414,7 @@ if __name__ == "__main__":
     #     asyncio_loop.add_signal_handler(sig, stop_loop)
 
     icon_manager.icon.run(setup=setup)
+    #clear_hotkeys()
     logger.info('Finished')
+
 

@@ -13,6 +13,8 @@ rules_manager = None
 rc_manager = None
 CORS(app)  # This will enable CORS for all routes
 
+on_api_callback = None
+
 def create_proxy_server(rc_manager):
     @app.route('/')
     def serve_html():
@@ -70,13 +72,33 @@ rules_manager.unread_counts\n{json.dumps(rules_manager.unread_counts, indent=4, 
         return f"<pre>{json.dumps(rc_manager.get_all_subscriptions(), indent=4, sort_keys=True)}</pre>"
 
 
+    @app.route('/api/markallread', methods=['GET'])
+    def markallread():
+        if on_api_callback:
+            on_api_callback('markallread')
+        return '{"action"="markallread"}'
+
+    @app.route('/api/quickresponse', methods=['GET'])
+    def quickresponse():
+        if on_api_callback:
+            on_api_callback('quickresponse')
+        return '{"action"="quickresponse"}'
+
+    @app.route('/api/showrocketapp', methods=['GET'])
+    def showrocketapp():
+        if on_api_callback:
+            on_api_callback('showrocketapp')
+        return '{"action"="showrocketapp"}'
+
+
 def get_proxy_url():
     return f"http://localhost:{PORT}"
 
-def run_proxy_server(p_rc_manager, p_rules_manager):
-    global rc_manager, rules_manager
+def run_proxy_server(p_rc_manager, p_rules_manager, p_on_api_callback):
+    global rc_manager, rules_manager, on_api_callback
     rc_manager = p_rc_manager
     rules_manager = p_rules_manager
+    on_api_callback = p_on_api_callback
     proxy_app = create_proxy_server(p_rc_manager)
 
     serve(app, host="0.0.0.0", port=PORT,  threads=10)

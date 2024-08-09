@@ -158,7 +158,23 @@ class RocketchatManager:
     def handle_channel_changes(self, payload):
         logger.info("===== handle_channel_changes =====")
         logger.info(f" {payload}")
-        #self.restart()
+        msg         = payload[1]['lastMessage']['msg']
+        msg_id      = payload[1]['lastMessage']['_id']
+        channel_id  = payload[1]['lastMessage']['rid']
+        sender_id   =  payload[1]['lastMessage']['u']['_id']
+        qualifier   = payload[1]['lastMessage'].get('t')
+        unread      = True
+        with self._subscription_lock:
+            logger.info(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
+            #qualifier=
+            if not self.unread_messages.get(channel_id):
+                if not unread:
+                    return
+                else:
+                    self.unread_messages[channel_id] = []
+            if unread:
+                self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier":qualifier}})
+                logger.info("   -- handle_channel_changes added ")
 
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
 
@@ -234,8 +250,8 @@ class RocketchatManager:
                                 matching_rule = self._rules_manager.find_matching_rule(fname, chtype, [])
                                 if matching_rule and matching_rule.get('ignore', "False") == "False":
                                     self._subscription_dict[channel_id]=sub
-                                    await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
-                                    logger.info(f'subscribed to  {fname}  {channel_id}')
+                                    #await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
+                                    #logger.info(f'subscribed to  {fname}  {channel_id}')
                                     if unread>0  :
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
                                           #self.get_unread_messages_since_last_seen(sub)
@@ -245,6 +261,7 @@ class RocketchatManager:
                     while not self._stop_event.is_set():
                         await asyncio.sleep(1)
                         if self._stop_event.is_set():
+                            logger.info('Canceling rocket_chat_async worker thread...')
                             task.cancel()
                             break
                 else:
@@ -310,6 +327,23 @@ class RocketchatManager:
     def mark_read(self):
         for room_id in self.unread_messages.keys():
             self.mark_messages_as_read(room_id)
+
+
+    def send_message(self, room_id, text):
+            try:
+                payload = {
+                    "roomId": room_id,
+                    "text": text
+                }
+                response = requests.post(f'{self.SERVER_ADDRESS}/api/v1/chat.postMessage', headers=self.HEADERS, json=payload)
+                if response.status_code == 200:
+                    return True
+                else:
+                    self.do_error(f"Failed to send message to room {room_id}. Status code: {response.status_code}")
+                    return False
+            except Exception as e:
+                self.do_error(f"Network error: {e}")
+                return False
 
     def set_user_status(self, status, message=None):
         """
