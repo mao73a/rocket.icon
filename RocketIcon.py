@@ -13,6 +13,7 @@ import requests
 from global_hotkeys import *
 import tkinter as tk
 from tkinter import simpledialog
+import pyautogui
 import json
 
 config_path = os.path.expanduser("~/.rocketIcon")
@@ -22,13 +23,49 @@ TITLE = "Rocket Icon"
 C_MAIN_LOOP_WAIT_TIME=1 #sec
 
 
+class CustomDialog(simpledialog._QueryString):
+    def __init__(self, title, prompt, initialvalue=None, parent=None):
+        self._parent = parent
+        super().__init__(title, prompt, initialvalue=initialvalue, parent=parent)
+
+    def body(self, master):
+        self.attributes('-topmost', True)
+        self.after(0, self.focus_and_click)
+        return super().body(master)
+
+    def focus_and_click(self):
+        self.focus_force()
+        self.update_idletasks()
+        self.lift()
+
+        # Calculate the center of the dialog window
+        x = self.winfo_rootx() + self.winfo_width() // 2
+        y = self.winfo_rooty() + self.winfo_height() // 2
+
+        # Simulate a mouse click at the center of the dialog window
+        pyautogui.click(x, y)
+
+        # Simulate pressing the TAB key to focus the input field
+        #pyautogui.press('tab')
+
+def display_input_message(title, text, initialvalue):
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+
+    dialog = CustomDialog(title, text, initialvalue=initialvalue, parent=root)
+    answer = dialog.result
+
+    root.destroy()
+    return answer
+
+
 pause_invoked = False  # Flag to check if pause_event.clear() was invoked
 stop_event = threading.Event()
 pause_event = threading.Event()
 subscription_lock = threading.Lock()
 rules_manager = RulesManager(config_path)
 rc_manager = RocketchatManager(subscription_lock, rules_manager)
-g_last_preview_showed = {'rid':1,'name':'aaa', 'text':'some text'}
+g_last_preview_showed = {'rid':0,'name':'some name', 'text':'some text'}
 
 # Check if .rocketIcon directory exists, if not, create it and copy files
 def ensure_local_files():
@@ -279,26 +316,10 @@ def on_mark_read():
     restart()
 
 
-def display_input_message(title, text, initialvalue):
-    root = tk.Tk()
-    root.withdraw()  # Hide the root window
-    root.attributes('-topmost', True)  # Make the root window topmost
-
-    # Create a simple dialog and make sure it is focused
-    dialog = simpledialog._QueryString(title, text, initialvalue=initialvalue, parent=root)
-
-    # Ensure the dialog is on top and focused
-    dialog.attributes('-topmost', True)
-    dialog.focus_force()
-
-    answer = dialog.result
-    root.destroy()
-    return answer
-
 def on_quick_response():
     global g_last_preview_showed
     print("on_quick_response")
-
+    #os.startfile("C:/Ustawienia/_workdir/delphi/sticky/Sticky.exe")
     if g_last_preview_showed.get('rid'):
         print("  -> do on_quick_response")
         answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')}, for message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
@@ -307,22 +328,9 @@ def on_quick_response():
             rc_manager.mark_read()
             restart()
 
-# def on_quick_response():
-#     global g_last_preview_showed
-#     print("on_quick_response")
-#     if g_last_preview_showed.get('rid'):
-#         print("  -> do on_quick_response")
-#         root = tk.Tk()
-#         root.withdraw()  # Hide the root window
-#         answer = simpledialog.askstring(f"Quick reponse...", f"To {g_last_preview_showed.get('name')}, for message: \"{g_last_preview_showed.get('text')[:30]}\"...", initialvalue="")
-#         root.destroy()
-#         rc_manager.quick_response(g_last_preview_showed.get('rid'), answer)
-#         rc_manager.mark_read()
-#         restart()
-
 
 def on_version(icon, item):
-     os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
+    os.startfile(f"https://github.com/mao73a/rocket.icon/releases")
 
 
 def setup(icon):

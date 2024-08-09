@@ -7,3 +7,4 @@ Flask==3.0.3
 Flask-Cors==4.0.1
 waitress==3.0.0
 global_hotkeys==0.1.7
+PyAutoGUI=0.9.54
