@@ -283,7 +283,15 @@ def display_input_message(title, text, initialvalue):
     root = tk.Tk()
     root.withdraw()  # Hide the root window
     root.attributes('-topmost', True)  # Make the root window topmost
-    answer = simpledialog.askstring(title, text,initialvalue=initialvalue)
+
+    # Create a simple dialog and make sure it is focused
+    dialog = simpledialog._QueryString(title, text, initialvalue=initialvalue, parent=root)
+
+    # Ensure the dialog is on top and focused
+    dialog.attributes('-topmost', True)
+    dialog.focus_force()
+
+    answer = dialog.result
     root.destroy()
     return answer
 
