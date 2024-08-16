@@ -158,51 +158,38 @@ class RocketchatManager:
     def handle_channel_changes(self, payload):
         logger.info("===== handle_channel_changes =====")
         logger.info(f" {payload}")
-        msg         = payload[1]['lastMessage']['msg']
-        msg_id      = payload[1]['lastMessage']['_id']
-        channel_id  = payload[1]['lastMessage']['rid']
-        sender_id   =  payload[1]['lastMessage']['u']['_id']
-        qualifier   = payload[1]['lastMessage'].get('t')
-        unread      = True
-        with self._subscription_lock:
-            logger.info(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
-            #qualifier=
-            if not self.unread_messages.get(channel_id):
-                if not unread:
-                    return
-                else:
-                    self.unread_messages[channel_id] = []
-            if unread:
-                self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier":qualifier}})
-                logger.info("   -- handle_channel_changes added ")
+
+        try:
+            last_message = payload[1].get('lastMessage')
+            if last_message is None:
+                logger.warning("No 'lastMessage' in payload")
+                return
+
+            msg = last_message.get('msg', '')
+            msg_id = last_message.get('_id', '')
+            channel_id = last_message.get('rid', '')
+            sender_id = last_message.get('u', {}).get('_id', '')
+            qualifier = last_message.get('t')
+            unread = True
+
+            with self._subscription_lock:
+                logger.info(f"   channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg} unread={unread} qualifier={qualifier}")
+
+                if not self.unread_messages.get(channel_id):
+                    if not unread:
+                        return
+                    else:
+                        self.unread_messages[channel_id] = []
+
+                if unread:
+                    self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier": qualifier}})
+                    logger.info("  -- handle_channel_changes added ")
+
+        except Exception as e:
+            logger.error(f"   >>> Error handling channel changes: {e}", exc_info=True)
+
 
     #{'motest':['msg_101':{"text":"abc"}, 'msg_102':{"text":"efg",  "qualifier":"videoconf"} ]}
-
-    def remove_message(self, channel_id, msg_id):
-        for msg_dict in self.unread_messages[channel_id]:
-            if msg_id in msg_dict:
-                self.unread_messages[channel_id].remove(msg_dict)
-                break
-        self.remove_all_historical_messages(channel_id)
-
-    def handle_message(self, channel_id, sender_id, msg_id, thread_id, msg, qualifier, unread, repeated):
-        with self._subscription_lock:
-            logger.info(f"channel={channel_id} sender={sender_id} msgid={msg_id} txt={msg}  unread={unread} qualifier={qualifier}")
-            #qualifier=
-            if not self.unread_messages.get(channel_id):
-                if not unread:
-                    return
-                else:
-                    self.unread_messages[channel_id] = []
-            if unread:
-                self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier":qualifier}})
-                logger.info("   -- handle_message1 added ")
-            else:
-                self.remove_message(channel_id, msg_id)
-                if len(self.unread_messages[channel_id])==0:
-                    del self.unread_messages[channel_id]
-                logger.info("   -- handle_message1 removed ")
-
     def add_historical_message(self, channel_id):
         if not self.unread_messages.get(channel_id):
             self.unread_messages[channel_id] = []

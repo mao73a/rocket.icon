@@ -12,7 +12,7 @@ from RocketIcon.proxy_server import run_proxy_server, get_proxy_url
 import requests
 from global_hotkeys import *
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, messagebox
 import pyautogui
 import json
 
@@ -24,6 +24,11 @@ C_MAIN_LOOP_WAIT_TIME=1 #sec
 
 
 class CustomDialog(simpledialog._QueryString):
+    def click_after_delay(self, x, y, delay):
+        for i in range(3):
+            time.sleep(delay)
+            pyautogui.click(x, y)
+
     def __init__(self, title, prompt, initialvalue=None, parent=None):
         self._parent = parent
         super().__init__(title, prompt, initialvalue=initialvalue, parent=parent)
@@ -42,11 +47,9 @@ class CustomDialog(simpledialog._QueryString):
         x = self.winfo_rootx() + self.winfo_width() // 2
         y = self.winfo_rooty() + self.winfo_height() // 2
 
-        # Simulate a mouse click at the center of the dialog window
-        pyautogui.click(x, y)
+        click_thread = threading.Thread(target=self.click_after_delay, args=(x, y, 0.3))
+        click_thread.start()
 
-        # Simulate pressing the TAB key to focus the input field
-        #pyautogui.press('tab')
 
 def display_input_message(title, text, initialvalue):
     root = tk.Tk()
@@ -170,20 +173,20 @@ def monitor_all_subscriptions():
                 if len(rules_manager.unread_counts) == 0:
                     icon_manager.set_basic_image()
 
-                if counter % 5 == 0:
-                    status = rc_manager.get_status()
-                    idle_duration_sec = get_idle_duration()
-                    if status!=prev_status:
-                        icon_manager.icon.update_menu()
-                        prev_status=status
-                        logger.info(f"User status is now {status}. AutoAway set to {AUTOAWAY_TIME_SEC}")
-                    if status=='online' and idle_duration_sec>AUTOAWAY_TIME_SEC:
-                        rc_manager.set_away('')
-                        need_restore_status=status
-                        icon_manager.set_away_image()
-                    elif need_restore_status and idle_duration_sec<=AUTOAWAY_TIME_SEC:
-                        rc_manager.set_user_status(need_restore_status)
-                        need_restore_status=""
+                # if counter % 5 == 0:
+                #     status = rc_manager.get_status()
+                #     idle_duration_sec = get_idle_duration()
+                #     if status!=prev_status:
+                #         icon_manager.icon.update_menu()
+                #         prev_status=status
+                #         logger.info(f"User status is now {status}. AutoAway set to {AUTOAWAY_TIME_SEC}")
+                #     if status=='online' and idle_duration_sec>AUTOAWAY_TIME_SEC:
+                #         rc_manager.set_away('')
+                #         need_restore_status=status
+                #         icon_manager.set_away_image()
+                #     elif need_restore_status and idle_duration_sec<=AUTOAWAY_TIME_SEC:
+                #         rc_manager.set_user_status(need_restore_status)
+                #         need_restore_status=""
 
 
             if elapsed_time > 5:
@@ -321,12 +324,13 @@ def on_quick_response():
     print("on_quick_response")
     #os.startfile("C:/Ustawienia/_workdir/delphi/sticky/Sticky.exe")
     if g_last_preview_showed.get('rid'):
-        print("  -> do on_quick_response")
-        answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')}, for message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
+        answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')} message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
         if answer:
             rc_manager.send_message(g_last_preview_showed.get('rid'), answer)
             rc_manager.mark_read()
             restart()
+    else:
+        messagebox.showinfo(title="Quick reposne", message="You have no message to answer.")
 
 
 def on_version(icon, item):
@@ -356,6 +360,7 @@ def setup(icon):
         pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
+        pystray.MenuItem("Quick response", on_quick_response),
         pystray.MenuItem("Mark all as read", on_mark_read)
     )
 
