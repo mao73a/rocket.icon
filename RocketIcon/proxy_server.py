@@ -61,11 +61,24 @@ def create_proxy_server(rc_manager):
 
     @app.route('/api/debug', methods=['GET'])
     def debug():
-        content = f"""
-<pre>rc_manager.unread_messages\n{json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True)}\n
-rules_manager.unread_counts\n{json.dumps(rules_manager.unread_counts, indent=4, sort_keys=True)}</pre>
-"""
-        return content
+        try:
+            content = f"""
+rc_manager.unread_messages\n{json.dumps(rc_manager.unread_messages, indent=4, sort_keys=True)}\n
+rules_manager.unread_counts\n{json.dumps(rules_manager.unread_counts, indent=4, sort_keys=True)}
+    """
+
+            updates = []
+            for channel_id in rc_manager.unread_messages:
+                vjson = rc_manager.get_subscription_for_channel(channel_id)
+                updates.append(vjson.get('subscription'))
+
+            if updates:
+                for sub in updates:
+                    content+= f"\n sub_updates: {json.dumps(sub, indent=4, sort_keys=True) } "
+        except Exception as e:
+            logger.error(f"   >>> Error handling channel changes: {e}", exc_info=True)
+
+        return "<pre>"+content+"</pre>"
 
     @app.route('/api/subscriptions', methods=['GET'])
     def subscriptions():

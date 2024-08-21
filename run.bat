@@ -1,1 +1,1 @@
-python rocketicon.py
+start pythonw rocketicon.py

@@ -112,7 +112,7 @@ class RocketchatManager:
         return wsl_address
 
     def do_error(self, text):
-        logger.info(text)
+        logger.error(text)
         if self._on_error_callback:
             self._on_error_callback(text)
 
@@ -183,7 +183,8 @@ class RocketchatManager:
 
                 if unread:
                     self.unread_messages[channel_id].append({msg_id: {"text": msg, "qualifier": qualifier}})
-                    logger.info("  -- handle_channel_changes added ")
+                    logger.info("    -- handle_channel_changes added ")
+                    logger.info(json.dumps(self.unread_messages, indent=4, sort_keys=True))
 
         except Exception as e:
             logger.error(f"   >>> Error handling channel changes: {e}", exc_info=True)
@@ -237,8 +238,6 @@ class RocketchatManager:
                                 matching_rule = self._rules_manager.find_matching_rule(fname, chtype, [])
                                 if matching_rule and matching_rule.get('ignore', "False") == "False":
                                     self._subscription_dict[channel_id]=sub
-                                    #await self._rocketChat.subscribe_to_channel_messages(channel_id,  self.handle_message)
-                                    #logger.info(f'subscribed to  {fname}  {channel_id}')
                                     if unread>0  :
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
                                           #self.get_unread_messages_since_last_seen(sub)
@@ -255,15 +254,19 @@ class RocketchatManager:
                     self.do_error("No subscirptions found")
                     await asyncio.sleep(10)
                     continue
-            except  (RocketChat.ConnectionClosed, RocketChat.ConnectCallFailed) as e:
-                    self.do_error("Connection failed: {e}")
-                    await asyncio.sleep(10)
-                    logger.info('Reconnecting...')
+
+            except Exception as e:
+                self.do_error(f"monitor_subscriptions_websocket: \n {e}")
+                await asyncio.sleep(10)
+                logger.info('Reconnecting...')
+
+
 
     async def unsubscribe_all(self):
         for channel_id in self._subscription_dict.keys():
             await self._rocketChat.unsubscribe(channel_id)
         self._subscription_dict={}
+
 
     def monitor_asyncio_subscriptions_websocket(self):
         asyncio_loop = asyncio.new_event_loop()

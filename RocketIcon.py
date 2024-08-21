@@ -25,7 +25,7 @@ C_MAIN_LOOP_WAIT_TIME=1 #sec
 
 class CustomDialog(simpledialog._QueryString):
     def click_after_delay(self, x, y, delay):
-        for i in range(3):
+        for i in range(10):
             time.sleep(delay)
             pyautogui.click(x, y)
 
@@ -162,6 +162,7 @@ def monitor_all_subscriptions():
                     updates = data.get('update', [])
                     icon_manager.reset_priority()
                     for sub in updates:
+                        #logger.info(f"monitor_all_subscriptions: {json.dumps(sub, indent=4, sort_keys=True)}")
                         rules_manager.process_subscription(sub, rc_manager.unread_messages)
                     if rules_manager.unread_counts:
                         summary = "\n".join([f"{fname}: {unread}" for fname, unread in rules_manager.unread_counts.items()])
@@ -327,6 +328,7 @@ def on_quick_response():
         answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')} message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
         if answer:
             rc_manager.send_message(g_last_preview_showed.get('rid'), answer)
+            time.sleep(1)
             rc_manager.mark_read()
             restart()
     else:
@@ -341,11 +343,8 @@ def setup(icon):
     icon.visible = True
     icon.menu = pystray.Menu(
         pystray.MenuItem("Version 1.0.4", on_version),
-        pystray.MenuItem("Quit", on_clicked_quit),
         pystray.MenuItem("Settings", on_clicked_settings),
         pystray.MenuItem("Rules", on_clicked_rules),
-        pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
-        pystray.MenuItem("Search", on_search),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
         pystray.MenuItem("Pause...",
                 Menu(pystray.MenuItem("Pause for 10 minutes", on_clicked_stop_10),
@@ -359,7 +358,9 @@ def setup(icon):
         pystray.MenuItem('Away',    on_clicked_away, checked=lambda item: rc_manager.get_status()=="away", radio=True),
         pystray.MenuItem('Offline', on_clicked_offline, checked=lambda item: rc_manager.get_status()=="offline", radio=True),
         pystray.MenuItem(pystray.Menu.SEPARATOR, on_clicked_separator),
+        pystray.MenuItem("Quit", on_clicked_quit),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
+        pystray.MenuItem("Search", on_search),
         pystray.MenuItem("Quick response", on_quick_response),
         pystray.MenuItem("Mark all as read", on_mark_read)
     )
