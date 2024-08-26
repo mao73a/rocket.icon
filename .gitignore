@@ -10,3 +10,6 @@ subscriptions.txt
 test*.py
 /rocketicon.lnk
 /rocketicon.log
+/logmonitor.py
+/Pipfile.lock
+/todo.txt

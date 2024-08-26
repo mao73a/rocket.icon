@@ -12,7 +12,7 @@ from RocketIcon.proxy_server import run_proxy_server, get_proxy_url
 import requests
 from global_hotkeys import *
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog
 import pyautogui
 import json
 
@@ -326,13 +326,19 @@ def on_quick_response():
     #os.startfile("C:/Ustawienia/_workdir/delphi/sticky/Sticky.exe")
     if g_last_preview_showed.get('rid'):
         answer = display_input_message("Quick response...", f"To {g_last_preview_showed.get('name')} message: \"{g_last_preview_showed.get('text')[:30]}\"...", "")
+
+
         if answer:
             rc_manager.send_message(g_last_preview_showed.get('rid'), answer)
             time.sleep(1)
             rc_manager.mark_read()
             restart()
     else:
-        messagebox.showinfo(title="Quick reposne", message="You have no message to answer.")
+        root = tk.Tk()
+        root.wm_attributes("-topmost", 1)
+        root.withdraw()
+        tk.messagebox.showerror(title="Quick reposne", message="You have no message to answer.", parent=root)
+        root.destroy()
 
 
 def on_version(icon, item):
@@ -361,8 +367,8 @@ def setup(icon):
         pystray.MenuItem("Quit", on_clicked_quit),
         pystray.MenuItem("Launch Rocket", on_clicked_show, default=True),
         pystray.MenuItem("Search", on_search),
-        pystray.MenuItem("Quick response", on_quick_response),
-        pystray.MenuItem("Mark all as read", on_mark_read)
+        pystray.MenuItem("Quick response    (c+s+a M)", on_quick_response),
+        pystray.MenuItem("Mark all as read  (c+a M)", on_mark_read)
     )
 
 
@@ -411,10 +417,12 @@ if __name__ == "__main__":
     logger.info('Started')
     icon_manager.set_icon_title(TITLE)
     bindings = [
-        ["control + m", None, on_mark_read, True],
-        ["control + alt + m", None, on_quick_response, True]
+        ["control + alt + m", None, on_mark_read, True],
+        ["control + alt +shift + m", None, on_quick_response, True]
     ]
-    #register_hotkeys(bindings)
+    register_hotkeys(bindings)
+    start_checking_hotkeys()
+
     load_config()
     rules_manager.set_on_escalation(my_on_escalation)
     rules_manager.set_on_file_changed(my_on_file_changed, stop_event)  # starts a new thread

@@ -24,6 +24,7 @@ class RocketchatManager:
         self._rocketChat = None
         self._subscription_dict = {}
         self._rc_manager_thread = None
+        self._rocket_async_unhandled_error = None
 
     @property
     def ROCKET_USER_ID(self):
@@ -204,20 +205,30 @@ class RocketchatManager:
                 del self.unread_messages[channel_id]
             logger.info(f"   -- remove_all_historical_messages: removed for channel {channel_id}")
 
+    async def run_forever_wrapper(self):
+        try:
+            await self._rocketChat.run_forever()
+        except Exception as e:
+                logger.info(f'run_forever_wrapper: Unexpected exception occurred: {e}')
+                self._rocket_async_unhandled_error = e
+
     #asyncio.run(monitor_subscriptions_websocket()
     async def monitor_subscriptions_websocket(self):
         self._stop_event = asyncio.Event()
         while not self._stop_event.is_set():
+            self._rocket_async_unhandled_error = None
             if not self._rules_manager.rules_are_loaded() or not self._rules_manager.config_is_loaded():
                 self.do_error('')
                 await asyncio.sleep(10)
                 continue
 
             try:
+                print("Createing RocketChat() object and connectiing to the server...")
                 logger.info("Createing RocketChat() object and connectiing to the server...")
                 self._rocketChat = RocketChat()
                 #await rc.start(address, username, password)
                 # Alternatively, use rc.resume for token-based authentication:
+                print("  #1")
                 await self._rocketChat.resume(self.convert_to_wsl_address(self.SERVER_ADDRESS), self.ROCKET_USER_ID, self.ROCKET_TOKEN)
                 # 1. Set up the desired callbacks...
                 #for channel_id, channel_type in await rc.get_channels(): //to few informations returned :-(
@@ -225,6 +236,7 @@ class RocketchatManager:
                 await self._rocketChat.subscribe_to_channel_changes_raw(self.handle_channel_changes)
                 logger.info("Geting all subscriptions...")
                 data = self.get_all_subscriptions()
+                print("  #5")
                 if data:
                     with self._subscription_lock:
                         updates = data.get('update', [])
@@ -242,14 +254,19 @@ class RocketchatManager:
                                           #this will cause the channel to be monitored by monitor_all_subscriptions loop
                                           #self.get_unread_messages_since_last_seen(sub)
                                           self.add_historical_message(channel_id)
-                    # await self._rocketChat.run_forever()
-                    task = asyncio.create_task(self._rocketChat.run_forever())
+                    print("  #10")
+                    #await self._rocketChat.run_forever()
+
+
+                    task = asyncio.create_task(self.run_forever_wrapper())
                     while not self._stop_event.is_set():
                         await asyncio.sleep(1)
-                        if self._stop_event.is_set():
-                            logger.info('Canceling rocket_chat_async worker thread...')
-                            task.cancel()
-                            break
+                        if self._rocket_async_unhandled_error:
+                            raise self._rocket_async_unhandled_error
+                    logger.info('Canceling rocket_chat_async worker thread...')
+                    task.cancel()
+                    break
+
                 else:
                     self.do_error("No subscirptions found")
                     await asyncio.sleep(10)
@@ -302,11 +319,16 @@ class RocketchatManager:
         if self._rc_manager_thread.is_alive():
             logger.info(" Asyncio restart begin...")
             self._stop_event.set()
+            logger.info(" Asyncio restart begin 2")
             time.sleep(1)
             if self._set_on_reload:
+                logger.info(" Asyncio restart begin 3")
                 self._set_on_reload()
+            logger.info(" Asyncio restart begin 4")
             self._rc_manager_thread.join()  # Wait for the thread to finish
+            logger.info(" Asyncio restart begin 5")
             self._stop_event.clear()
+            logger.info(" Asyncio restart begin 6")
             self.start()
             logger.info(" Asyncio restart end.")
 

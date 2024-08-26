@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pystray = "*"
+requests = "*"
+rocketchat-async = "*"
+websockets = "*"
+pillow = "*"
+flask = "*"
+flask-cors = "*"
+waitress = "*"
+global-hotkeys = "*"
+pyautogui = "*"
+
+[dev-packages]
+pyinstaller = "*"
+
+[requires]
+python_version = "3.12"
